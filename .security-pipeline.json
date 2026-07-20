@@ -1,0 +1,33 @@
+{
+  "project_info": {
+    "name": "Get-ChildItem -Path \"c:\\Users\\fabio\\OneDrive\\Documentos\\Poyectos Kiro 2026\\Sena\\Proyecto final SENA\" -Recurse -Depth 2 | Select-Object FullName",
+    "description": "cd \"c:\\Users\\fabio\\OneDrive\\Documentos\\Poyectos Kiro 2026\\Sena\\Proyecto final SENA\" && git status",
+    "compliance_requirements": [
+      "ley_1581",
+      "sic"
+    ],
+    "security_contact": "cd \"c:\\Users\\fabio\\OneDrive\\Documentos\\Poyectos Kiro 2026\\Sena\\Proyecto final SENA\" && git add --dry-run .",
+    "legal_contact": "cd \"c:\\Users\\fabio\\OneDrive\\Documentos\\Poyectos Kiro 2026\\Sena\\Proyecto final SENA\" && git remote -v"
+  },
+  "security_thresholds": {
+    "block_on_secrets": true,
+    "block_on_critical": true,
+    "block_on_high": true,
+    "require_approval_on_medium": true,
+    "allow_low": true
+  },
+  "reporting": {
+    "language": "es_CO",
+    "timezone": "America/Bogota",
+    "formats": [
+      "html",
+      "markdown"
+    ],
+    "include_compliance_section": true
+  },
+  "notifications": {
+    "slack_webhook": "cd \"c:\\Users\\fabio\\OneDrive\\Documentos\\Poyectos Kiro 2026\\Sena\\Proyecto final SENA\" && git status",
+    "email_notifications": true,
+    "sic_notification_required": false
+  }
+}
