@@ -1,0 +1,82 @@
+# Configuración de gitleaks para contexto colombiano
+title = "Gitleaks Config Colombia"
+description = "Reglas para detección de secretos en el contexto colombiano"
+
+# Patrones de secretos comunes en Colombia
+[[rules]]
+description = "API Key para servicios bancarios colombianos (PSE)"
+id = "pse-api-key"
+regex = '''(?i)(pse|ach|bancolombia|daviplata|nequi|daviplata)[_-]?(api|key|token|secret)[_-]?[0-9a-f]{32,64}'''
+tags = ["api-key", "colombia", "financial"]
+
+[[rules]]
+description = "Tokens de servicios gubernamentales colombianos"
+id = "colombia-gov-token"
+regex = '''(?i)(supersociedades|sic|superfinanciera|dian|mincit)[_-]?(token|key|secret)[_-]?[0-9a-f]{24,128}'''
+tags = ["api-key", "colombia", "government"]
+
+[[rules]]
+description = "Cédula de ciudadanía expuesta"
+id = "colombia-cc"
+regex = '''\b[1-9][0-9]{6,9}\b'''
+secretGroup = 1
+tags = ["personal-data", "colombia", "ley-1581"]
+
+[[rules]]
+description = "Contraseñas en texto plano (contexto colombiano)"
+id = "plaintext-password-col"
+regex = '''(?i)(contraseña|password|clave|passwd)[=:]\s*["']?([^"'\s]{6,})["']?'''
+secretGroup = 2
+tags = ["password", "colombia"]
+
+[[rules]]
+description = "Tokens JWT"
+id = "jwt-token"
+regex = '''eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*'''
+tags = ["jwt", "token"]
+
+[[rules]]
+description = "AWS Access Key ID"
+id = "aws-access-key-id"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["aws", "key"]
+
+[[rules]]
+description = "Google API Key"
+id = "google-api-key"
+regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+tags = ["google", "api-key"]
+
+[[rules]]
+description = "Stripe API Key"
+id = "stripe-api-key"
+regex = '''(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}'''
+tags = ["stripe", "api-key"]
+
+# Exclusiones para falsos positivos comunes
+[[allowlist]]
+description = "Archivos de ejemplo y test"
+paths = [
+    "**/test/**",
+    "**/tests/**",
+    "**/example/**",
+    "**/examples/**",
+    "**/samples/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+]
+
+[[allowlist]]
+description = "Archivos de configuración con datos de ejemplo"
+files = [
+    "(?i).*config.*example.*",
+    "(?i).*env.*example.*",
+    "(?i).*sample.*"
+]
+
+# Configuración global
+[general]
+enableGitChecks = true
+verbose = true
+redact = true
+maxTargetSize = 1000000

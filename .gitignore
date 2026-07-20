@@ -1,0 +1,34 @@
+# Archivos generados por la acción
+gitleaks-report.json
+semgrep-results.sarif
+validation-result.json
+security-report-es.*
+security-badge.svg
+
+# Directorio de reports
+reports/
+
+# Archivos de Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node.js
+node_modules/
+dist/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Entorno virtual
+venv/
+.env
+.env.local
+
+# Logs
+*.log
+
+# Archivos temporales
+tmp/
+temp/

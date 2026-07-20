@@ -1,0 +1,175 @@
+name: Security Pipeline - Advanced Configuration
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'config/**'
+  schedule:
+    - cron: '0 8 * * 1'  # Cada lunes a las 8 AM (hora Bogotá)
+
+env:
+  CUSTOM_CONFIG: '.gitleaks-custom.toml'
+  SLACK_WEBHOOK: ${{ secrets.SLACK_SECURITY_WEBHOOK }}
+  SECURITY_TEAM_EMAILS: 'security@empresa.co,devops@empresa.co'
+
+jobs:
+  comprehensive-security-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Create custom gitleaks config
+      run: |
+        # Configuración personalizada para tu organización
+        cat > $CUSTOM_CONFIG << 'EOF'
+        title = "Custom Security Rules - Mi Empresa"
+        
+        [[rules]]
+        description = "API Key Interna"
+        id = "internal-api-key"
+        regex = '''(?i)(internal[_-]?api[_-]?key[_-]?[a-f0-9]{32})'''
+        tags = ["api-key", "internal", "colombia"]
+        
+        [[rules]]
+        description = "Token de autenticación empresarial"
+        id = "enterprise-auth-token"
+        regex = '''(?i)(enterprise[_-]?auth[_-]?token[_-]?[a-f0-9]{64})'''
+        tags = ["auth-token", "enterprise", "colombia"]
+        
+        # Exclusiones específicas
+        [allowlist]
+        files = [
+          "**/test/**",
+          "**/examples/**",
+          "**/demo-data/**"
+        ]
+        EOF
+        
+    - name: Security Pipeline Colombia - Configuración Empresarial
+      id: security-scan
+      uses: tu-usuario/security-pipeline-colombia@v1.0.0
+      with:
+        config-path: ${{ env.CUSTOM_CONFIG }}
+        semgrep-config: 'p/owasp-top-ten,p/security-audit'
+        compliance-level: 'both'  # Ley 1581 + SIC
+        timezone: 'America/Bogota'
+        report-language: 'es_CO'
+        report-formats: 'html,markdown,json'
+        block-on-secrets: true
+        block-on-critical: true
+        block-on-high: true
+        require-approval-on-medium: true
+        slack-webhook: ${{ env.SLACK_WEBHOOK }}
+        email-notifications: ${{ env.SECURITY_TEAM_EMAILS }}
+        
+    - name: Process scan results
+      if: always()
+      run: |
+        echo "📊 Resultados del análisis de seguridad:"
+        echo "Estado: ${{ steps.security-scan.outputs.validation-status }}"
+        echo "Secretos detectados: ${{ steps.security-scan.outputs.secret-count }}"
+        echo "Vulnerabilidades totales: ${{ steps.security-scan.outputs.vulnerability-count }}"
+        echo "Vulnerabilidades críticas: ${{ steps.security-scan.outputs.critical-count }}"
+        echo "Cumplimiento Ley 1581: ${{ steps.security-scan.outputs.compliance-status }}"
+        
+        # Tomar decisiones basadas en resultados
+        if [ "${{ steps.security-scan.outputs.validation-status }}" = "failed" ]; then
+          echo "❌ Merge bloqueado - Problemas críticos de seguridad"
+        elif [ "${{ steps.security-scan.outputs.validation-status }}" = "requires_approval" ]; then
+          echo "⚠️ Aprobación manual requerida"
+        else
+          echo "✅ Análisis exitoso"
+        fi
+        
+    - name: Upload comprehensive reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-analysis-${{ github.run_number }}
+        path: |
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          security-report-es.*
+        retention-days: 90
+        
+    - name: Create security dashboard entry
+      if: success()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          // Leer resultados
+          const results = JSON.parse(fs.readFileSync('validation-result.json', 'utf8'));
+          
+          // Crear entrada para dashboard de seguridad
+          const dashboardEntry = {
+            timestamp: new Date().toISOString(),
+            repository: context.repo.repo,
+            branch: context.ref,
+            scan_id: context.runId,
+            results: {
+              status: results.status,
+              summary: results.summary,
+              compliance: results.compliance
+            }
+          };
+          
+          console.log('📈 Entrada para dashboard creada:', dashboardEntry);
+          // Aquí se podría enviar a un servicio de dashboard externo
+          
+  notify-security-team:
+    runs-on: ubuntu-latest
+    needs: comprehensive-security-scan
+    if: always()
+    
+    steps:
+    - name: Download security reports
+      uses: actions/download-artifact@v4
+      with:
+        name: security-analysis-${{ github.run_number }}
+        
+    - name: Generate executive summary
+      run: |
+        echo "📋 RESUMEN EJECUTIVO - ANÁLISIS DE SEGURIDAD" > executive-summary.md
+        echo "==============================================" >> executive-summary.md
+        echo "" >> executive-summary.md
+        echo "**Repositorio:** ${{ github.repository }}" >> executive-summary.md
+        echo "**Fecha:** $(date '+%Y-%m-%d %H:%M:%S %Z')" >> executive-summary.md
+        echo "**Estado:** ${{ needs.comprehensive-security-scan.outputs.validation-status }}" >> executive-summary.md
+        echo "" >> executive-summary.md
+        echo "### Hallazgos Principales" >> executive-summary.md
+        echo "- Secretos detectados: ${{ needs.comprehensive-security-scan.outputs.secret-count }}" >> executive-summary.md
+        echo "- Vulnerabilidades críticas: ${{ needs.comprehensive-security-scan.outputs.critical-count }}" >> executive-summary.md
+        echo "- Vulnerabilidades altas: ${{ needs.comprehensive-security-scan.outputs.high-count }}" >> executive-summary.md
+        echo "- Cumplimiento Ley 1581: ${{ needs.comprehensive-security-scan.outputs.compliance-status }}" >> executive-summary.md
+        echo "" >> executive-summary.md
+        echo "### Acciones Recomendadas" >> executive-summary.md
+        if [ "${{ needs.comprehensive-security-scan.outputs.validation-status }}" = "failed" ]; then
+          echo "1. 🔴 **ATENCIÓN INMEDIATA** - Revisar y corregir problemas críticos" >> executive-summary.md
+          echo "2. Bloquear merge hasta corrección" >> executive-summary.md
+          echo "3. Notificar al equipo de seguridad" >> executive-summary.md
+        elif [ "${{ needs.comprehensive-security-scan.outputs.validation-status }}" = "requires_approval" ]; then
+          echo "1. 🟡 **REVISIÓN REQUERIDA** - Aprobación manual necesaria" >> executive-summary.md
+          echo "2. Evaluar riesgo de vulnerabilidades medias/bajas" >> executive-summary.md
+          echo "3. Documentar decisión de aprobación" >> executive-summary.md
+        else
+          echo "1. 🟢 **APROBADO** - No se detectaron problemas críticos" >> executive-summary.md
+          echo "2. Proceder con merge normalmente" >> executive-summary.md
+          echo "3. Mantener monitoreo continuo" >> executive-summary.md
+        fi
+        
+    - name: Upload executive summary
+      uses: actions/upload-artifact@v4
+      with:
+        name: executive-summary
+        path: executive-summary.md

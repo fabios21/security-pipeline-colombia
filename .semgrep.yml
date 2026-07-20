@@ -1,0 +1,149 @@
+# Configuración de Semgrep para contexto colombiano
+rules:
+  # Reglas OWASP Top 10 básicas
+  - id: owasp-top-ten
+    patterns:
+      - pattern: p/owasp-top-ten
+  
+  # Reglas específicas para Colombia
+  - id: colombia-data-protection
+    message: "Posible violación Ley 1581 - Datos personales expuestos"
+    severity: WARNING
+    languages: [javascript, typescript, python, java]
+    pattern: |
+      $DATA = {
+        ...,
+        $FIELD: $VALUE,
+        ...
+      }
+    where:
+      - pattern: $FIELD
+        regex: "(cedula|identificacion|documento|cc|nit|pasaporte)"
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: "\d{6,10}"
+  
+  # Detección de servicios financieros colombianos
+  - id: colombia-financial-keys
+    message: "API Key de servicio financiero colombiano expuesta"
+    severity: ERROR
+    languages: [javascript, typescript, python, java]
+    pattern: |
+      $KEY = "..."
+    where:
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: "(?i)(pse|ach|bancolombia|daviplata|nequi|bancolombia|bogota|colpatria|itau|bbva|avvillas|bancoagrario)[_-]?(api|key|token|secret)[_-]?[0-9a-f]{24,}"
+  
+  # Contraseñas en texto plano
+  - id: plaintext-password-col
+    message: "Contraseña en texto plano - Riesgo alto"
+    severity: ERROR
+    languages: [all]
+    pattern: |
+      $PASS = "..."
+    where:
+      - metavariable-regex:
+          metavariable: $PASS
+          regex: "(?i)(password|passwd|clave|contraseña)[=:]\s*['\"]?.+['\"]?"
+  
+  # SQL Injection patterns
+  - id: sql-injection-concat
+    message: "Posible SQL Injection - Concatenación de strings"
+    severity: ERROR
+    languages: [javascript, typescript, python, java, php]
+    pattern: |
+      `SELECT ... ${$VAR} ...`
+      "SELECT ... " + $VAR + " ..."
+      'SELECT ... ' . $VAR . ' ...'
+  
+  # XSS patterns
+  - id: xss-innerhtml
+    message: "Posible XSS - Uso de innerHTML sin sanitización"
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: |
+      $ELEMENT.innerHTML = $CONTENT
+      $ELEMENT.outerHTML = $CONTENT
+  
+  # Command Injection
+  - id: command-injection
+    message: "Posible Command Injection"
+    severity: ERROR
+    languages: [javascript, typescript, python, java, php]
+    pattern: |
+      exec($COMMAND)
+      execSync($COMMAND)
+      spawn($COMMAND)
+      system($COMMAND)
+  
+  # Uso peligroso de eval()
+  - id: dangerous-eval
+    message: "Uso de eval() - Riesgo muy alto"
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: |
+      eval($EXPRESSION)
+  
+  # Weak random generators
+  - id: weak-random
+    message: "Generador aleatorio no criptográfico"
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern: |
+      Math.random()
+  
+  # Logging de datos sensibles
+  - id: sensitive-data-logging
+    message: "Logging de datos sensibles detectado"
+    severity: WARNING
+    languages: [all]
+    pattern: |
+      console.log($DATA)
+      logger.info($DATA)
+      print($DATA)
+    where:
+      - metavariable-regex:
+          metavariable: $DATA
+          regex: "(?i)(credit.?card|tarjeta|card.?number|numero.?tarjeta|password|contraseña|token|api.?key|cedula|identificacion|documento)"
+
+# Configuración de exclusiones para falsos positivos
+exclude:
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/__tests__/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
+  - "**/node_modules/**"
+  - "**/vendor/**"
+  - "**/dist/**"
+  - "**/build/**"
+
+# Opciones de ejecución
+options:
+  # Severidades mínimas para reportar
+  severity: ["ERROR", "WARNING"]
+  
+  # Formato de salida
+  output: sarif
+  
+  # Optimizaciones
+  optimizations: all
+  
+  # Timeout por archivo (ms)
+  timeout: 5000
+  
+  # Memoria máxima (MB)
+  max-memory: 4096
+
+# Metadata
+metadata:
+  author: "Security Pipeline Colombia"
+  description: "Reglas de Semgrep adaptadas al contexto colombiano"
+  category: "security"
+  confidence: "HIGH"
+  license: "MIT"
+  references:
+    - "https://owasp.org/www-project-top-ten/"
+    - "https://www.sic.gov.co/ley-1581-de-2012"
+    - "https://semgrep.dev/docs/"

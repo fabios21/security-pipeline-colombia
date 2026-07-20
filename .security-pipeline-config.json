@@ -1,0 +1,182 @@
+{
+  "project_info": {
+    "name": "Security Pipeline Colombia",
+    "description": "Pipeline de seguridad automatizado para proyectos de desarrollo de software",
+    "version": "1.0.0",
+    "sector": "technology",
+    "compliance_requirements": [
+      "ley_1581",
+      "sic_circular_002_2021"
+    ],
+    "security_contact": "seguridad@empresa.co",
+    "legal_contact": "juridica@empresa.co",
+    "technical_lead": "tech.lead@empresa.co"
+  },
+  
+  "security_thresholds": {
+    "secrets": {
+      "block_merge": true,
+      "require_approval": false,
+      "comment": "Siempre bloquear si hay secretos expuestos"
+    },
+    "vulnerabilities": {
+      "critical": {
+        "threshold": 9.0,
+        "block_merge": true,
+        "require_approval": false
+      },
+      "high": {
+        "threshold": 7.0,
+        "block_merge": true,
+        "require_approval": false
+      },
+      "medium": {
+        "threshold": 4.0,
+        "block_merge": false,
+        "require_approval": true
+      },
+      "low": {
+        "threshold": 0.1,
+        "block_merge": false,
+        "require_approval": false
+      }
+    }
+  },
+  
+  "reporting": {
+    "language": "es_CO",
+    "timezone": "America/Bogota",
+    "formats": ["html", "markdown", "json"],
+    "include_compliance_section": true,
+    "custom_sections": [
+      "technical_recommendations",
+      "business_impact",
+      "regulatory_compliance"
+    ]
+  },
+  
+  "sector_specific": {
+    "technology": {
+      "protect_customer_data": true,
+      "gdpr_compliance": false,
+      "ley_1581_enhanced": true,
+      "data_types": [
+        "customer_records",
+        "transaction_data", 
+        "personal_identifiers",
+        "business_data"
+      ]
+    }
+  },
+  
+  "notifications": {
+    "slack": {
+      "enabled": false,
+      "webhook_url": null,
+      "channels": {
+        "security_alerts": "#security",
+        "compliance_reports": "#compliance",
+        "educational_updates": "#formacion"
+      }
+    },
+    "email": {
+      "enabled": true,
+      "security_team": ["seguridad@empresa.co"],
+      "legal_team": ["juridica@empresa.co"],
+      "development_team": ["desarrollo@empresa.co"]
+    },
+    "teams": {
+      "enabled": false,
+      "webhook_url": null
+    }
+  },
+  
+  "integration": {
+    "jira": {
+      "enabled": false,
+      "server_url": null,
+      "project_key": "SEC",
+      "auto_create_issues": false
+    },
+    "sonarqube": {
+      "enabled": false,
+      "server_url": null,
+      "project_key": null
+    }
+  },
+  
+  "custom_rules": {
+    "colombia_specific": {
+      "cedula_detection": {
+        "enabled": true,
+        "severity": "high",
+        "message": "Número de cédula detectado - Ley 1581"
+      },
+      "government_apis": {
+        "enabled": true,
+        "severity": "critical",
+        "patterns": [
+          "gov\\.co",
+          "sena\\.edu\\.co",
+          "mineducacion\\.gov\\.co"
+        ]
+      },
+      "business_data": {
+        "enabled": true,
+        "severity": "high",
+        "patterns": [
+          "client_id",
+          "customer_data",
+          "transaction_id",
+          "business_info"
+        ]
+      }
+    }
+  },
+  
+  "allowlist": {
+    "files": [
+      "**/test/**",
+      "**/tests/**",
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/ejemplo-vulnerable.*",
+      "**/sample-data/**"
+    ],
+    "patterns": [
+      "demo_api_key_12345",
+      "test_password",
+      "example_secret",
+      "fake_cedula_123456789"
+    ],
+    "educational_exceptions": [
+      "ejemplo_vulnerable.js",
+      "demo-insecure.py",
+      "tutorial-security.md"
+    ]
+  },
+  
+  "performance": {
+    "max_scan_time": 600,
+    "max_file_size": 10485760,
+    "concurrent_scans": 2,
+    "cache_results": true,
+    "cache_duration": 3600
+  },
+  
+  "documentation": {
+    "auto_generate": true,
+    "include_metrics": true,
+    "technical_focus": true,
+    "business_summary": true
+  },
+  
+  "metadata": {
+    "created_at": "2024-01-15T10:30:00-05:00",
+    "updated_at": "2024-01-15T10:30:00-05:00",
+    "version": "1.0.0",
+    "schema_version": "2024.1",
+    "environment": "production",
+    "jurisdiction": "Colombia"
+  }
+}

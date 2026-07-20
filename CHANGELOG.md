@@ -1,0 +1,132 @@
+# Changelog
+
+Todos los cambios notables en Security Pipeline Colombia serán documentados en este archivo.
+
+El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
+y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2024-01-15
+
+### Added
+- **Acción principal** de GitHub Marketplace (`action.yml`)
+- **Escaneo de secretos** con gitleaks configurado para Colombia
+- **Análisis SAST** con Semgrep (OWASP Top Ten)
+- **Validación automática** de merges basada en severidad
+- **Reportes en español** con cumplimiento Ley 1581
+- **Configuración personalizable** para diferentes niveles de cumplimiento
+- **Notificaciones** por Slack y email
+- **Scripts de instalación** automática
+- **Git hooks** pre-commit para análisis local
+- **Workflows de CI/CD** para testing y publicación
+
+### Features
+- **Adaptación colombiana**: Reglas específicas para cédulas, datos personales
+- **Zona horaria**: Configuración automática America/Bogota
+- **Idioma**: Reportes en español colombiano (es_CO)
+- **Cumplimiento**: Secciones específicas para Ley 1581 y SIC
+- **Umbrales configurables**: Bloqueo por severidad personalizable
+- **Formatos múltiples**: HTML, Markdown, JSON
+- **Artifacts**: Reportes disponibles como artifacts de GitHub Actions
+
+### Configuración Incluida
+- `.gitleaks.toml` con reglas para contexto colombiano
+- `.semgrep.yml` con configuración base
+- `.security-pipeline-config.json` para personalización
+- `security-report-template.md` plantilla de reportes
+
+### Technical
+- **Composite action** con soporte para múltiples inputs/outputs
+- **Dependencias Python** para análisis y reportes
+- **Tests automatizados** para validación
+- **Build con NCC** para distribución eficiente
+- **Documentación completa** en español
+
+---
+
+## [0.1.0] - 2024-01-10
+
+### Added
+- **Concepto inicial** del pipeline de seguridad
+- **Workflow base** de GitHub Actions
+- **Scripts Python** para validación y reportes
+- **Configuración básica** de gitleaks y semgrep
+- **Documentación inicial** en README.md
+
+### Experimental
+- **Primera versión** para testing interno
+- **Integración básica** con herramientas de seguridad
+- **Plantilla de reportes** inicial
+- **Ejemplos** de uso y configuración
+
+---
+
+## [Unreleased]
+
+### Planned
+- **Integración con SonarQube**
+- **Análisis de dependencias** (SCA)
+- **Reportes PDF** profesionales
+- **Dashboard** web para monitoreo
+- **API** para integraciones externas
+- **Más reglas** específicas para sectores colombianos
+- **Traducciones** a inglés y portugués
+- **Plugin para IDEs** (VS Code, IntelliJ)
+
+---
+
+## Notas de Versión
+
+### Versión 1.0.0
+Esta es la primera versión estable lista para GitHub Marketplace. Incluye todas las funcionalidades básicas para un pipeline de seguridad completo adaptado al contexto colombiano.
+
+### Versión 0.1.0
+Versión experimental para pruebas internas y validación de concepto.
+
+---
+
+## Formatos de Versionamiento
+
+Este proyecto usa [Semantic Versioning](https://semver.org/):
+- **MAJOR**: Cambios incompatibles en API
+- **MINOR**: Nuevas funcionalidades compatibles
+- **PATCH**: Correcciones de bugs compatibles
+
+---
+
+## Actualización Automática
+
+Para actualizar a la última versión:
+
+```yaml
+# En tu workflow
+uses: tu-usuario/security-pipeline-colombia@v1.0.0
+```
+
+O usa la versión mayor para actualizaciones automáticas:
+
+```yaml
+uses: tu-usuario/security-pipeline-colombia@v1
+```
+
+---
+
+## Migraciones
+
+### De versión experimental a 1.0.0
+- Actualizar referencia en workflows
+- Revisar cambios en inputs/outputs
+- Validar configuración personalizada
+- Ejecutar tests de integración
+
+---
+
+## Historial de Publicaciones
+
+| Fecha | Versión | Estado | Notas |
+|-------|---------|--------|-------|
+| 2024-01-15 | 1.0.0 | Stable | Primera publicación en Marketplace |
+| 2024-01-10 | 0.1.0 | Beta | Versión experimental interna |
+
+---
+
+*Para preguntas sobre versiones específicas, consulta los issues etiquetados con la versión correspondiente.*

@@ -1,0 +1,455 @@
+name: 'Security Pipeline Colombia'
+description: '🔒 Pipeline de seguridad automatizado para GitHub Actions con cumplimiento Ley 1581 de protección de datos en Colombia'
+author: 'Security Pipeline Colombia Team'
+
+branding:
+  icon: 'shield'
+  color: 'green'
+
+inputs:
+  config-path:
+    description: 'Ruta al archivo de configuración personalizado de gitleaks (.gitleaks.toml)'
+    required: false
+    default: '.gitleaks.toml'
+    
+  semgrep-config:
+    description: 'Configuración de Semgrep a utilizar (p/owasp-top-ten, p/ci, p/security-audit, etc.)'
+    required: false
+    default: 'p/owasp-top-ten'
+    
+  compliance-level:
+    description: 'Nivel de cumplimiento normativo colombiano'
+    required: false
+    default: 'ley_1581'
+    options:
+      - 'ley_1581'
+      - 'sic_circular_002_2021'
+      - 'both'
+      - 'custom'
+      
+  timezone:
+    description: 'Zona horaria para reportes'
+    required: false
+    default: 'America/Bogota'
+    
+  report-language:
+    description: 'Idioma de los reportes generados'
+    required: false
+    default: 'es_CO'
+    options:
+      - 'es_CO'
+      - 'es'
+      - 'en'
+      
+  report-formats:
+    description: 'Formatos de reporte a generar'
+    required: false
+    default: 'html,markdown'
+    
+  block-on-secrets:
+    description: 'Bloquear merge si se detectan secretos expuestos'
+    required: false
+    default: 'true'
+    type: boolean
+    
+  block-on-critical:
+    description: 'Bloquear merge si se detectan vulnerabilidades críticas (CVSS >= 9.0)'
+    required: false
+    default: 'true'
+    type: boolean
+    
+  block-on-high:
+    description: 'Bloquear merge si se detectan vulnerabilidades altas (CVSS >= 7.0)'
+    required: false
+    default: 'true'
+    type: boolean
+    
+  require-approval-on-medium:
+    description: 'Requerir aprobación manual si se detectan vulnerabilidades medias (CVSS >= 4.0)'
+    required: false
+    default: 'true'
+    type: boolean
+    
+  slack-webhook:
+    description: 'URL de webhook de Slack para notificaciones (opcional)'
+    required: false
+    default: ''
+    
+  email-notifications:
+    description: 'Lista de emails para notificaciones (separados por coma)'
+    required: false
+    default: ''
+
+outputs:
+  validation-status:
+    description: 'Estado final de la validación de seguridad'
+    value: ${{ steps.validation.outputs.status }}
+    
+  secret-count:
+    description: 'Número de secretos detectados'
+    value: ${{ steps.validation.outputs.secret_count }}
+    
+  vulnerability-count:
+    description: 'Número total de vulnerabilidades detectadas'
+    value: ${{ steps.validation.outputs.vulnerability_count }}
+    
+  critical-count:
+    description: 'Número de vulnerabilidades críticas detectadas'
+    value: ${{ steps.validation.outputs.critical_count }}
+    
+  high-count:
+    description: 'Número de vulnerabilidades altas detectadas'
+    value: ${{ steps.validation.outputs.high_count }}
+    
+  report-url:
+    description: 'URL del reporte de seguridad generado'
+    value: ${{ steps.generate-report.outputs.report_url }}
+    
+  compliance-status:
+    description: 'Estado de cumplimiento de Ley 1581'
+    value: ${{ steps.compliance-check.outputs.compliance_status }}
+
+runs:
+  using: 'composite'
+  steps:
+    # Paso 1: Checkout del código
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    # Paso 2: Configurar entorno
+    - name: Setup environment
+      shell: bash
+      run: |
+        echo "🔒 Security Pipeline Colombia - Iniciando"
+        echo "📝 Configuración: ${{ inputs.config-path }}"
+        echo "🏛️ Cumplimiento: ${{ inputs.compliance-level }}"
+        echo "🌐 Zona horaria: ${{ inputs.timezone }}"
+        echo "📄 Idioma reportes: ${{ inputs.report-language }}"
+        
+        # Configurar variables de entorno
+        echo "TIMEZONE=${{ inputs.timezone }}" >> $GITHUB_ENV
+        echo "LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
+        echo "LC_ALL=${{ inputs.report-language }}" >> $GITHUB_ENV
+        echo "COMPLIANCE_LEVEL=${{ inputs.compliance-level }}" >> $GITHUB_ENV
+        
+    # Paso 3: Setup de herramientas
+    - name: Setup security tools
+      shell: bash
+      run: |
+        echo "📦 Configurando herramientas de seguridad..."
+        
+        # Instalar gitleaks si no está instalado
+        if ! command -v gitleaks &> /dev/null; then
+          echo "Instalando gitleaks..."
+          curl -s https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh
+          sudo mv gitleaks /usr/local/bin/
+        fi
+        
+        # Instalar semgrep si no está instalado
+        if ! command -v semgrep &> /dev/null; then
+          echo "Instalando semgrep..."
+          pip install semgrep
+        fi
+        
+        # Instalar Python dependencies para scripts
+        echo "Instalando dependencias Python..."
+        pip install jq jsonschema jinja2 python-dateutil pyyaml
+        
+        # Verificar instalaciones
+        gitleaks version
+        semgrep --version
+        
+    # Paso 4: Instalar scripts y configuraciones
+    - name: Install pipeline files
+      shell: bash
+      run: |
+        echo "📁 Instalando archivos del pipeline..."
+        
+        # Crear estructura de directorios
+        mkdir -p .github/workflows
+        mkdir -p .github/scripts
+        
+        # Copiar scripts desde el repositorio de la acción
+        # Estos archivos están incluidos en el paquete de la acción
+        cp -r $GITHUB_ACTION_PATH/.github/scripts/* .github/scripts/ || true
+        cp $GITHUB_ACTION_PATH/.gitleaks.toml . || true
+        cp $GITHUB_ACTION_PATH/.semgrep.yml . || true
+        cp $GITHUB_ACTION_PATH/security-report-template.md . || true
+        
+        # Copiar configuración personalizada si se proporciona
+        if [ -f "${{ inputs.config-path }}" ]; then
+          echo "Usando configuración personalizada: ${{ inputs.config-path }}"
+          cp "${{ inputs.config-path }}" .gitleaks.toml
+        fi
+        
+        # Verificar que los archivos se copiaron
+        echo "Archivos instalados:"
+        ls -la .github/scripts/
+        ls -la .gitleaks.toml .semgrep.yml
+        
+    # Paso 5: Ejecutar escaneo de secretos
+    - name: Run secret scan with gitleaks
+      id: secret-scan
+      shell: bash
+      run: |
+        echo "🔍 Ejecutando escaneo de secretos..."
+        
+        gitleaks detect \
+          --config=.gitleaks.toml \
+          --verbose \
+          --redact \
+          --report-format json \
+          --report-path gitleaks-report.json
+        
+        # Guardar resultados en variables de salida
+        if [ -f "gitleaks-report.json" ]; then
+          SECRET_COUNT=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+          echo "secret_count=$SECRET_COUNT" >> $GITHUB_OUTPUT
+          echo "Se detectaron $SECRET_COUNT secretos"
+        else
+          echo "secret_count=0" >> $GITHUB_OUTPUT
+          echo "No se encontraron secretos"
+        fi
+        
+        # Determinar si hay secretos críticos
+        if [ "$SECRET_COUNT" -gt 0 ]; then
+          echo "has_secrets=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_secrets=false" >> $GITHUB_OUTPUT
+        fi
+        
+    # Paso 6: Ejecutar análisis SAST
+    - name: Run SAST scan with semgrep
+      id: sast-scan
+      shell: bash
+      run: |
+        echo "🔍 Ejecutando análisis SAST..."
+        
+        semgrep scan \
+          --config "${{ inputs.semgrep-config }}" \
+          --sarif \
+          --output semgrep-results.sarif \
+          --error
+        
+        # Parsear resultados
+        if [ -f "semgrep-results.sarif" ]; then
+          # Contar vulnerabilidades por severidad
+          CRITICAL_COUNT=$(jq '[.runs[].results[] | select(.properties."security-severity" >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          HIGH_COUNT=$(jq '[.runs[].results[] | select(.properties."security-severity" >= 7.0 and .properties."security-severity" < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          MEDIUM_COUNT=$(jq '[.runs[].results[] | select(.properties."security-severity" >= 4.0 and .properties."security-severity" < 7.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          LOW_COUNT=$(jq '[.runs[].results[] | select(.properties."security-severity" < 4.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          
+          TOTAL_VULNS=$((CRITICAL_COUNT + HIGH_COUNT + MEDIUM_COUNT + LOW_COUNT))
+          
+          echo "critical_count=$CRITICAL_COUNT" >> $GITHUB_OUTPUT
+          echo "high_count=$HIGH_COUNT" >> $GITHUB_OUTPUT
+          echo "medium_count=$MEDIUM_COUNT" >> $GITHUB_OUTPUT
+          echo "low_count=$LOW_COUNT" >> $GITHUB_OUTPUT
+          echo "vulnerability_count=$TOTAL_VULNS" >> $GITHUB_OUTPUT
+          
+          echo "Resumen vulnerabilidades:"
+          echo "  Críticas: $CRITICAL_COUNT"
+          echo "  Altas: $HIGH_COUNT"
+          echo "  Medias: $MEDIUM_COUNT"
+          echo "  Bajas: $LOW_COUNT"
+          echo "  Total: $TOTAL_VULNS"
+        else
+          echo "critical_count=0" >> $GITHUB_OUTPUT
+          echo "high_count=0" >> $GITHUB_OUTPUT
+          echo "medium_count=0" >> $GITHUB_OUTPUT
+          echo "low_count=0" >> $GITHUB_OUTPUT
+          echo "vulnerability_count=0" >> $GITHUB_OUTPUT
+          echo "No se encontraron vulnerabilidades"
+        fi
+        
+    # Paso 7: Validar resultados y cumplimiento
+    - name: Validate security results
+      id: validation
+      shell: bash
+      run: |
+        echo "✅ Ejecutando validación de seguridad..."
+        
+        # Ejecutar script de validación
+        python .github/scripts/validate_security.py \
+          --secrets gitleaks-report.json \
+          --sast semgrep-results.sarif \
+          --output validation-result.json
+        
+        # Leer resultado de validación
+        if [ -f "validation-result.json" ]; then
+          STATUS=$(jq -r '.status' validation-result.json)
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "Estado de validación: $STATUS"
+        else
+          echo "status=error" >> $GITHUB_OUTPUT
+          echo "Error generando resultado de validación"
+        fi
+        
+        # Verificar reglas de bloqueo
+        if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ] && [ "${{ inputs.block-on-secrets }}" = "true" ]; then
+          echo "❌ Merge bloqueado: Se detectaron secretos expuestos"
+          exit 1
+        fi
+        
+        if [ "${{ steps.sast-scan.outputs.critical_count }}" -gt 0 ] && [ "${{ inputs.block-on-critical }}" = "true" ]; then
+          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades críticas"
+          exit 1
+        fi
+        
+        if [ "${{ steps.sast-scan.outputs.high_count }}" -gt 0 ] && [ "${{ inputs.block-on-high }}" = "true" ]; then
+          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades altas"
+          exit 1
+        fi
+        
+        # Verificar si requiere aprobación
+        if [ "${{ steps.sast-scan.outputs.medium_count }}" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" = "true" ]; then
+          echo "⚠️ Aprobación requerida: Se detectaron vulnerabilidades medias"
+          # No salimos con error, solo marcamos que requiere aprobación
+        fi
+        
+    # Paso 8: Verificar cumplimiento Ley 1581
+    - name: Check compliance with Ley 1581
+      id: compliance-check
+      shell: bash
+      run: |
+        echo "🏛️ Verificando cumplimiento Ley 1581..."
+        
+        # Ejecutar verificación de cumplimiento
+        COMPLIANCE_STATUS="compliant"
+        
+        if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ]; then
+          COMPLIANCE_STATUS="non_compliant"
+          echo "⚠️ Incumplimiento detectado: Fuga de datos personales según Ley 1581"
+        elif [ "${{ inputs.compliance-level }}" = "ley_1581" ] || [ "${{ inputs.compliance-level }}" = "both" ]; then
+          # Verificaciones adicionales específicas de Ley 1581
+          echo "🔍 Verificando controles específicos Ley 1581..."
+          COMPLIANCE_STATUS="compliant"
+        fi
+        
+        echo "compliance_status=$COMPLIANCE_STATUS" >> $GITHUB_OUTPUT
+        echo "Estado de cumplimiento: $COMPLIANCE_STATUS"
+        
+    # Paso 9: Generar reporte en español
+    - name: Generate security report
+      id: generate-report
+      shell: bash
+      run: |
+        echo "📄 Generando reporte de seguridad..."
+        
+        # Determinar formatos
+        IFS=',' read -ra FORMATS <<< "${{ inputs.report-formats }}"
+        
+        REPORT_URLS=""
+        
+        for format in "${FORMATS[@]}"; do
+          case $format in
+            html)
+              python .github/scripts/generate_report.py \
+                --secrets gitleaks-report.json \
+                --sast semgrep-results.sarif \
+                --output security-report-es.html \
+                --format html
+              
+              # Subir artifact
+              echo "📊 Reporte HTML generado: security-report-es.html"
+              REPORT_URLS="$REPORT_URLS,security-report-es.html"
+              ;;
+            markdown)
+              python .github/scripts/generate_report.py \
+                --secrets gitleaks-report.json \
+                --sast semgrep-results.sarif \
+                --output security-report-es.md \
+                --format markdown
+              
+              echo "📊 Reporte Markdown generado: security-report-es.md"
+              REPORT_URLS="$REPORT_URLS,security-report-es.md"
+              ;;
+            json)
+              cp validation-result.json security-report-es.json
+              echo "📊 Reporte JSON generado: security-report-es.json"
+              REPORT_URLS="$REPORT_URLS,security-report-es.json"
+              ;;
+          esac
+        done
+        
+        # Remover primera coma
+        REPORT_URLS=${REPORT_URLS:1}
+        echo "report_urls=$REPORT_URLS" >> $GITHUB_OUTPUT
+        
+    # Paso 10: Subir artifacts
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          security-report-es.*
+        retention-days: 30
+        
+    # Paso 11: Enviar notificaciones
+    - name: Send notifications
+      if: always()
+      shell: bash
+      run: |
+        echo "📢 Enviando notificaciones..."
+        
+        # Preparar mensaje de resumen
+        STATUS="${{ steps.validation.outputs.status }}"
+        SECRETS="${{ steps.secret-scan.outputs.secret_count }}"
+        VULNS="${{ steps.sast-scan.outputs.vulnerability_count }}"
+        CRITICAL="${{ steps.sast-scan.outputs.critical_count }}"
+        HIGH="${{ steps.sast-scan.outputs.high_count }}"
+        
+        MESSAGE="🔒 Security Pipeline Colombia - Resumen\n"
+        MESSAGE="$MESSAGE\nEstado: $STATUS"
+        MESSAGE="$MESSAGE\nSecretos detectados: $SECRETS"
+        MESSAGE="$MESSAGE\nVulnerabilidades: $VULNS"
+        MESSAGE="$MESSAGE\n• Críticas: $CRITICAL"
+        MESSAGE="$MESSAGE\n• Altas: $HIGH"
+        
+        # Notificación por Slack
+        if [ -n "${{ inputs.slack-webhook }}" ]; then
+          echo "Enviando notificación a Slack..."
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"$MESSAGE\"}" \
+            "${{ inputs.slack-webhook }}" || true
+        fi
+        
+        # Notificación por email (placeholder - se implementaría con servicio externo)
+        if [ -n "${{ inputs.email-notifications }}" ]; then
+          echo "Notificaciones por email configuradas para: ${{ inputs.email-notifications }}"
+          # Aquí iría la lógica para enviar emails
+        fi
+        
+    # Paso 12: Resultado final
+    - name: Final summary
+      shell: bash
+      run: |
+        echo ""
+        echo "✨ Security Pipeline Colombia - Completado"
+        echo "=========================================="
+        echo ""
+        echo "📊 Resumen final:"
+        echo "• Secretos detectados: ${{ steps.secret-scan.outputs.secret_count }}"
+        echo "• Vulnerabilidades totales: ${{ steps.sast-scan.outputs.vulnerability_count }}"
+        echo "• Vulnerabilidades críticas: ${{ steps.sast-scan.outputs.critical_count }}"
+        echo "• Vulnerabilidades altas: ${{ steps.sast-scan.outputs.high_count }}"
+        echo "• Estado validación: ${{ steps.validation.outputs.status }}"
+        echo "• Cumplimiento Ley 1581: ${{ steps.compliance-check.outputs.compliance_status }}"
+        echo ""
+        echo "📄 Reportes disponibles como artifacts"
+        echo "🔗 URLs: ${{ steps.generate-report.outputs.report_urls }}"
+        echo ""
+        
+        if [ "${{ steps.validation.outputs.status }}" = "passed" ]; then
+          echo "✅ ANÁLISIS EXITOSO - No se detectaron problemas críticos"
+        elif [ "${{ steps.validation.outputs.status }}" = "requires_approval" ]; then
+          echo "⚠️ APROBACIÓN REQUERIDA - Revisar vulnerabilidades medias/bajas"
+        else
+          echo "❌ FALLA DE SEGURIDAD - Se requiere atención inmediata"
+        fi

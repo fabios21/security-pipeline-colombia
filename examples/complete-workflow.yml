@@ -1,0 +1,54 @@
+name: Security Pipeline Colombia - Complete Example
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.py'
+      - '**/*.java'
+      - '**/*.go'
+      - '**/*.rb'
+      - '**/*.php'
+      - '**/*.cs'
+      - '**/*.cpp'
+      - '**/*.c'
+
+env:
+  TIMEZONE: America/Bogota
+  LANG: es_CO.UTF-8
+  LC_ALL: es_CO.UTF-8
+
+jobs:
+  security-pipeline:
+    name: Security Pipeline Colombia
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Run Security Pipeline Colombia
+      uses: tu-usuario/security-pipeline-colombia@v1.0.0
+      with:
+        compliance-level: 'ley_1581'
+        timezone: ${{ env.TIMEZONE }}
+        report-language: 'es_CO'
+        block-on-secrets: true
+        block-on-critical: true
+        block-on-high: true
+        require-approval-on-medium: true
+        report-formats: 'html,markdown'
+        
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          security-report-es.html
+          security-report-es.md
+        retention-days: 30
