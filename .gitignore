@@ -32,3 +32,6 @@ venv/
 # Archivos temporales
 tmp/
 temp/
+
+# Entorno Kiro (local development environment)
+.kiro/
