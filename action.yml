@@ -577,7 +577,7 @@ runs:
                   --format html \
                   --language $REPORT_LANG || {
                   echo "⚠️ Error generando reporte HTML, creando uno básico..."
-                  cat > security-report-$REPORT_LANG.html << EOF
+                  cat > "security-report-$REPORT_LANG.html" << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -593,7 +593,6 @@ runs:
 <body>
     <div class="header">
         <h1>🔒 Reporte de Seguridad Informática</h1>
-        <p>Generado: $(date)</p>
     </div>
     <div class="status">
         <h2>Estado del Análisis</h2>
@@ -602,7 +601,7 @@ runs:
     </div>
 </body>
 </html>
-EOF
+HTMLEOF
                 }
               else
                 echo "⚠️ Script generate_report.py no encontrado, saltando reporte HTML"
@@ -619,27 +618,25 @@ EOF
                   --format markdown \
                   --language $REPORT_LANG || {
                   echo "⚠️ Error generando reporte Markdown, creando uno básico..."
-                  cat > security-report-$REPORT_LANG.md << EOF
+                  cat > "security-report-$REPORT_LANG.md" << 'MDEOF'
 # 🔒 Reporte de Seguridad Informática
-
-**Generado:** $(date)
 
 ## Estado del Análisis
 
 ⚠️ **Error:** No se pudo generar el reporte completo.
 
-Revisar \`validation-result.json\` para información detallada.
+Revisar `validation-result.json` para información detallada.
 
 ## Archivos Disponibles
 
-- \`gitleaks-report.json\` - Resultados de secretos
-- \`semgrep-results.sarif\` - Vulnerabilidades SAST
-- \`validation-result.json\` - Resumen de validación
-EOF
+- `gitleaks-report.json` - Resultados de secretos
+- `semgrep-results.sarif` - Vulnerabilidades SAST  
+- `validation-result.json` - Resumen de validación
+MDEOF
                 }
               else
                 echo "⚠️ Script generate_report.py no encontrado, creando reporte Markdown básico..."
-                cat > security-report-$REPORT_LANG.md << 'EOF'
+                cat > "security-report-$REPORT_LANG.md" << 'BASICEOF'
 # 🔒 Reporte de Seguridad Informática
 
 **Error:** Script de generación no disponible.
@@ -647,7 +644,7 @@ EOF
 ## Archivos de Datos Disponibles
 
 Revisar los archivos JSON/SARIF para información detallada.
-EOF
+BASICEOF
               fi
               
               echo "📊 Reporte Markdown: security-report-$REPORT_LANG.md"
