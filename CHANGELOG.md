@@ -5,6 +5,14 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-07-20
+
+### Fixed
+- **Gitleaks regex error**: Fixed `invalid regex secret group 1, max regex secret group 0` error
+- **Regex patterns**: Added capture groups for cédula detection rules
+- **Pattern precision**: Improved cédula regex to 7-8 digits (standard Colombian ID)
+- **Configuration validation**: All rules now properly validate with Gitleaks 8.18.1+
+
 ## [1.0.4] - 2026-07-20
 
 ### Fixed
