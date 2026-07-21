@@ -339,6 +339,8 @@ runs:
           echo "secret_count=0" >> $GITHUB_OUTPUT
           echo "has_secrets=false" >> $GITHUB_OUTPUT
           echo "No se puede ejecutar análisis de secretos sin gitleaks"
+          # Establecer SECRET_COUNT para que no cause errores si se referencia después
+          SECRET_COUNT="0"
           exit 0
         fi
         
@@ -350,6 +352,7 @@ runs:
           --report-path gitleaks-report.json
         
         # Guardar resultados en variables de salida
+        SECRET_COUNT="0"
         if [ -f "gitleaks-report.json" ]; then
           SECRET_COUNT=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
           echo "secret_count=$SECRET_COUNT" >> $GITHUB_OUTPUT
@@ -373,11 +376,19 @@ runs:
       run: |
         echo "🔍 Ejecutando análisis SAST..."
         
+        # Inicializar variables
+        CRITICAL_COUNT="0"
+        HIGH_COUNT="0"
+        MEDIUM_COUNT="0"
+        LOW_COUNT="0"
+        TOTAL_VULNS="0"
+        
+        # Ejecutar semgrep con manejo de errores
         semgrep scan \
           --config "${{ inputs.semgrep-config }}" \
           --sarif \
           --output semgrep-results.sarif \
-          --error
+          --error || true
         
         # Parsear resultados
         if [ -f "semgrep-results.sarif" ]; then

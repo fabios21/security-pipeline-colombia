@@ -6,9 +6,9 @@ echo ==================================================
 echo.
 
 REM Configuración - EDITAR ESTA LINEA
-set GITHUB_USER=TU_USUARIO_AQUI
+set GITHUB_USER=fabios21
 set REPO_NAME=security-pipeline-colombia
-set VERSION=v1.0.0
+set VERSION=v1.0.6
 
 echo 📋 Configuración:
 echo   Usuario GitHub: %GITHUB_USER%

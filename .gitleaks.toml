@@ -57,13 +57,13 @@ tags = ["stripe", "api-key"]
 [allowlist]
 description = "Exclusiones para archivos de prueba y ejemplo"
 paths = [
-    "**/test/**",
-    "**/tests/**",
-    "**/example/**",
-    "**/examples/**",
-    "**/samples/**",
-    "**/*.test.*",
-    "**/*.spec.*"
+    ".*/test/.*",
+    ".*/tests/.*",
+    ".*/example/.*",
+    ".*/examples/.*",
+    ".*/samples/.*",
+    ".*\\..*test\\..*",
+    ".*\\..*spec\\..*"
 ]
 files = [
     "(?i).*config.*example.*",

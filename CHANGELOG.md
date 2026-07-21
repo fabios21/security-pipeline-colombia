@@ -5,6 +5,15 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2026-07-20
+
+### Fixed
+- **Gitleaks regex panic**: Fixed `regexp: Compile(\`**/test/**\`): error parsing regexp` error
+- **Regex patterns**: Converted glob patterns to valid regular expressions in allowlist.paths
+- **Python script typo**: Fixed `requires_approbation` typo in validate_security.py
+- **Variable initialization**: Added proper initialization for SECRET_COUNT and vulnerability variables
+- **Error handling**: Improved error handling in action.yml steps
+
 ## [1.0.5] - 2026-07-20
 
 ### Fixed

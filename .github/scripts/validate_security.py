@@ -292,7 +292,7 @@ proporcionando análisis de fugas de datos y reportes comprensibles.
     if result["status"] == "failed":
         print("\n❌ MERGE BLOQUEADO - Se detectaron vulnerabilidades críticas/altas o secretos expuestos")
         sys.exit(1)
-    elif result["status"] == "requires_approbation":
+    elif result["status"] == "requires_approval":
         print("\n⚠️  APROBACIÓN REQUERIDA - Se detectaron vulnerabilidades medias/bajas")
         sys.exit(0)
     else:
