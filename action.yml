@@ -872,18 +872,23 @@ runs:
         echo "🔍 Verificación final de políticas de seguridad..."
         echo ""
         
-        # Leer datos reales de los archivos generados
+        # Leer datos reales de los archivos generados (ANTES de fallar)
         ACTUAL_SECRETS="0"
         ACTUAL_CRITICAL="0"  
         ACTUAL_HIGH="0"
         
         if [ -f "gitleaks-report.json" ]; then
+          # Usar la misma lógica de parsing que en el paso anterior
           ACTUAL_SECRETS=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+          if [ "$ACTUAL_SECRETS" = "0" ]; then
+            # Fallback con grep si jq falla
+            ACTUAL_SECRETS=$(grep -o '"RuleID"' gitleaks-report.json | wc -l 2>/dev/null || echo "0")
+          fi
         fi
         
         if [ -f "semgrep-results.sarif" ]; then
-          ACTUAL_CRITICAL=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          ACTUAL_HIGH=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 7.0 and .properties."security-severity" < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_CRITICAL=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_HIGH=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
         fi
         
         echo "📊 Resultados del análisis:"
@@ -891,6 +896,11 @@ runs:
         echo "  🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
         echo "  🟠 Vulnerabilidades altas: $ACTUAL_HIGH"
         echo ""
+        
+        # Guardar en variables de entorno para el resumen final
+        echo "FINAL_SECRETS=$ACTUAL_SECRETS" >> $GITHUB_ENV
+        echo "FINAL_CRITICAL=$ACTUAL_CRITICAL" >> $GITHUB_ENV
+        echo "FINAL_HIGH=$ACTUAL_HIGH" >> $GITHUB_ENV
         
         # Verificar reglas de bloqueo usando datos reales
         SHOULD_BLOCK=false
@@ -932,7 +942,8 @@ runs:
           echo "  • Seguridad: seguridad@empresa.co"
           echo "  • DevOps: devops@empresa.co"
           echo ""
-          exit 1
+          # NO hacer exit 1 aquí - dejar que el resumen se ejecute primero
+          echo "SHOULD_FAIL=true" >> $GITHUB_ENV
         else
           echo "✅ DECISIÓN: MERGE PERMITIDO"
           echo "═══════════════════════════"
@@ -947,6 +958,7 @@ runs:
           else
             echo "🎉 No se detectaron problemas de seguridad críticos."
           fi
+          echo "SHOULD_FAIL=false" >> $GITHUB_ENV
         fi
         
     # Paso 12: Mostrar resumen final
@@ -958,23 +970,18 @@ runs:
         echo "=============================="
         echo ""
         
-        # Leer datos reales de los archivos generados
-        ACTUAL_SECRETS="0"
+        # Usar datos de variables de entorno (más confiables)
+        ACTUAL_SECRETS="${FINAL_SECRETS:-0}"
         ACTUAL_VULNS="0"
-        ACTUAL_CRITICAL="0"
-        ACTUAL_HIGH="0"
+        ACTUAL_CRITICAL="${FINAL_CRITICAL:-0}"
+        ACTUAL_HIGH="${FINAL_HIGH:-0}"
         
-        if [ -f "gitleaks-report.json" ]; then
-          ACTUAL_SECRETS=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
-        fi
-        
+        # Solo leer vulnerabilidades totales si no tenemos datos del paso anterior
         if [ -f "semgrep-results.sarif" ]; then
-          ACTUAL_VULNS=$(jq '.runs[0].results | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          ACTUAL_CRITICAL=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          ACTUAL_HIGH=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 7.0 and .properties."security-severity" < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_VULNS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
         fi
         
-        # Mostrar datos reales (no los de los outputs que pueden estar mal)
+        # Mostrar datos CORRECTOS
         echo "🔑 Secretos detectados: $ACTUAL_SECRETS"
         echo "⚠️  Vulnerabilidades totales: $ACTUAL_VULNS"
         echo "🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
@@ -998,7 +1005,7 @@ runs:
         echo ""
         echo "📍 Los reportes están disponibles para descarga como artifacts"
         
-    # Paso 13: Completar ejecución
+    # Paso 13: Completar ejecución y aplicar bloqueo si es necesario
     - name: Complete execution
       if: always()
       shell: bash
@@ -1027,3 +1034,10 @@ runs:
         echo ""
         echo "📄 Todos los reportes están disponibles como artifacts"
         echo "📍 Descargar el artifact 'security-reports-prueba' para ver detalles completos"
+        
+        # Aplicar el bloqueo SOLO AL FINAL (después de mostrar todo)
+        if [ "${SHOULD_FAIL:-false}" = "true" ]; then
+          echo ""
+          echo "🚫 APLICANDO BLOQUEO DE MERGE..."
+          exit 1
+        fi
