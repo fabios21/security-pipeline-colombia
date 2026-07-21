@@ -426,7 +426,39 @@ runs:
         if [ -f "gitleaks-report.json" ]; then
           # Verificar si el archivo tiene contenido válido
           if [ -s "gitleaks-report.json" ]; then
-            SECRET_COUNT=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+            # Debug: mostrar primeras líneas para diagnóstico
+            echo "📄 Primeras líneas del JSON:"
+            head -5 gitleaks-report.json || echo "Error leyendo archivo"
+            
+            # Intentar múltiples formas de parsear el JSON
+            echo "🔢 Intentando parsear JSON..."
+            
+            # Método 1: Estructura estándar con .findings
+            SECRET_COUNT_1=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+            echo "  Método 1 (.findings): $SECRET_COUNT_1"
+            
+            # Método 2: Si es un array directo
+            SECRET_COUNT_2=$(jq '. | length' gitleaks-report.json 2>/dev/null || echo "0")
+            echo "  Método 2 (array directo): $SECRET_COUNT_2"
+            
+            # Método 3: Contar manualmente con grep
+            SECRET_COUNT_3=$(grep -o '"RuleID"' gitleaks-report.json | wc -l || echo "0")
+            echo "  Método 3 (grep RuleID): $SECRET_COUNT_3"
+            
+            # Usar el número más alto (más conservador)
+            if [ "$SECRET_COUNT_1" -gt "0" ]; then
+              SECRET_COUNT="$SECRET_COUNT_1"
+              echo "✅ Usando método 1: $SECRET_COUNT"
+            elif [ "$SECRET_COUNT_2" -gt "0" ]; then
+              SECRET_COUNT="$SECRET_COUNT_2"
+              echo "✅ Usando método 2: $SECRET_COUNT"
+            elif [ "$SECRET_COUNT_3" -gt "0" ]; then
+              SECRET_COUNT="$SECRET_COUNT_3"
+              echo "✅ Usando método 3: $SECRET_COUNT"
+            else
+              SECRET_COUNT="0"
+              echo "⚠️ Todos los métodos fallaron, usando 0"
+            fi
           else
             echo "⚠️ gitleaks-report.json está vacío, creando estructura válida..."
             echo '{"findings": []}' > gitleaks-report.json
@@ -434,7 +466,7 @@ runs:
           fi
           
           echo "secret_count=$SECRET_COUNT" >> $GITHUB_OUTPUT
-          echo "🔢 Secretos detectados por jq: $SECRET_COUNT"
+          echo "🔢 Secretos detectados finales: $SECRET_COUNT"
           
           # Verificar si hay secretos críticos
           if [ "$SECRET_COUNT" -gt 0 ]; then
@@ -450,16 +482,6 @@ runs:
           echo "secret_count=0" >> $GITHUB_OUTPUT
           echo "has_secrets=false" >> $GITHUB_OUTPUT
           echo "✅ No se encontraron secretos (archivo no generado)"
-        fi
-        
-        # Debug: mostrar contenido del archivo JSON
-        echo "📄 Contenido de gitleaks-report.json:"
-        if [ -f "gitleaks-report.json" ] && [ -s "gitleaks-report.json" ]; then
-          echo "Tamaño del archivo: $(wc -c < gitleaks-report.json) bytes"
-          echo "Primeras líneas:"
-          head -5 gitleaks-report.json || echo "Error leyendo archivo"
-        else
-          echo "Archivo vacío o inexistente"
         fi
         
     # Paso 6: Ejecutar análisis SAST
