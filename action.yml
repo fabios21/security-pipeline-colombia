@@ -730,7 +730,91 @@ runs:
         echo "   - visual-report.txt"
         echo "   - security-report-$REPORT_LANG.*"
         
-    # Paso 11: Mostrar resumen final
+    # Paso 11: Verificación final de bloqueo
+    - name: Final security validation
+      shell: bash
+      run: |
+        echo "🔍 Verificación final de políticas de seguridad..."
+        echo ""
+        
+        # Leer datos reales de los archivos generados
+        ACTUAL_SECRETS="0"
+        ACTUAL_CRITICAL="0"  
+        ACTUAL_HIGH="0"
+        
+        if [ -f "gitleaks-report.json" ]; then
+          ACTUAL_SECRETS=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+        fi
+        
+        if [ -f "semgrep-results.sarif" ]; then
+          ACTUAL_CRITICAL=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_HIGH=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 7.0 and .properties."security-severity" < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+        fi
+        
+        echo "📊 Resultados del análisis:"
+        echo "  🔑 Secretos detectados: $ACTUAL_SECRETS"
+        echo "  🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
+        echo "  🟠 Vulnerabilidades altas: $ACTUAL_HIGH"
+        echo ""
+        
+        # Verificar reglas de bloqueo usando datos reales
+        SHOULD_BLOCK=false
+        BLOCK_REASONS=""
+        
+        if [ "$ACTUAL_SECRETS" -gt 0 ] && [ "${{ inputs.block-on-secrets }}" = "true" ]; then
+          SHOULD_BLOCK=true
+          BLOCK_REASONS="$BLOCK_REASONS\n• 🔑 $ACTUAL_SECRETS secretos expuestos detectados"
+          echo "⚠️ Política: Bloqueo por secretos activado (block-on-secrets: true)"
+        fi
+        
+        if [ "$ACTUAL_CRITICAL" -gt 0 ] && [ "${{ inputs.block-on-critical }}" = "true" ]; then
+          SHOULD_BLOCK=true
+          BLOCK_REASONS="$BLOCK_REASONS\n• 🔴 $ACTUAL_CRITICAL vulnerabilidades críticas detectadas"
+          echo "⚠️ Política: Bloqueo por críticas activado (block-on-critical: true)"
+        fi
+        
+        if [ "$ACTUAL_HIGH" -gt 0 ] && [ "${{ inputs.block-on-high }}" = "true" ]; then
+          SHOULD_BLOCK=true
+          BLOCK_REASONS="$BLOCK_REASONS\n• 🟠 $ACTUAL_HIGH vulnerabilidades altas detectadas"
+          echo "⚠️ Política: Bloqueo por altas activado (block-on-high: true)"
+        fi
+        
+        echo ""
+        
+        if [ "$SHOULD_BLOCK" = "true" ]; then
+          echo "🚫 DECISIÓN: MERGE BLOQUEADO"
+          echo "═══════════════════════════"
+          echo ""
+          echo "📋 Razones del bloqueo:"
+          echo -e "$BLOCK_REASONS"
+          echo ""
+          echo "🔧 Acciones requeridas:"
+          echo "  1. 🗑️ Eliminar secretos expuestos del código"
+          echo "  2. 🛠️ Corregir vulnerabilidades críticas/altas"
+          echo "  3. 🔄 Volver a ejecutar el análisis"
+          echo ""
+          echo "📞 Contactos de emergencia:"
+          echo "  • Seguridad: seguridad@empresa.co"
+          echo "  • DevOps: devops@empresa.co"
+          echo ""
+          exit 1
+        else
+          echo "✅ DECISIÓN: MERGE PERMITIDO"
+          echo "═══════════════════════════"
+          echo ""
+          if [ "$ACTUAL_SECRETS" -gt 0 ] || [ "$ACTUAL_CRITICAL" -gt 0 ] || [ "$ACTUAL_HIGH" -gt 0 ]; then
+            echo "ℹ️ Se detectaron problemas pero las políticas permiten continuar:"
+            echo "  • block-on-secrets: ${{ inputs.block-on-secrets }}"
+            echo "  • block-on-critical: ${{ inputs.block-on-critical }}"
+            echo "  • block-on-high: ${{ inputs.block-on-high }}"
+            echo ""
+            echo "⚠️ Recomendación: Revisar y corregir los problemas encontrados."
+          else
+            echo "🎉 No se detectaron problemas de seguridad críticos."
+          fi
+        fi
+        
+    # Paso 12: Mostrar resumen final
     - name: Show final summary
       if: always()
       shell: bash
@@ -779,8 +863,9 @@ runs:
         echo ""
         echo "📍 Los reportes están disponibles para descarga como artifacts"
         
-    # Paso 12: Completar ejecución
+    # Paso 13: Completar ejecución
     - name: Complete execution
+      if: always()
       shell: bash
       run: |
         echo ""
@@ -789,31 +874,21 @@ runs:
         echo ""
         echo "📋 Próximos pasos:"
         echo "  1. Revisar los hallazgos en los reportes generados"
-        echo "  2. Corregir secretos expuestos y vulnerabilidades críticas"
-        echo "  3. Descargar artifacts para documentación"
+        echo "  2. Descargar artifacts para documentación detallada"
+        echo "  3. Implementar correcciones según las recomendaciones"
         echo ""
         
-        # Verificar reglas de bloqueo (SOLO DESPUÉS de generar todos los reportes)
-        if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ] && [ "${{ inputs.block-on-secrets }}" = "true" ]; then
-          echo "❌ Merge bloqueado: Se detectaron secretos expuestos"
-          exit 1
-        fi
-        
-        if [ "${{ steps.sast-scan.outputs.critical_count }}" -gt 0 ] && [ "${{ inputs.block-on-critical }}" = "true" ]; then
-          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades críticas"
-          exit 1
-        fi
-        
-        if [ "${{ steps.sast-scan.outputs.high_count }}" -gt 0 ] && [ "${{ inputs.block-on-high }}" = "true" ]; then
-          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades altas"
-          exit 1
-        fi
-        
-        # Evaluar estado final
+        # Evaluar estado final solo para información
         if [ "${{ steps.validation.outputs.status }}" = "passed" ]; then
           echo "✅ ANÁLISIS EXITOSO - No se detectaron problemas críticos"
         elif [ "${{ steps.validation.outputs.status }}" = "requires_approval" ]; then
           echo "⚠️ APROBACIÓN REQUERIDA - Revisar vulnerabilidades medias/bajas"
+        elif [ "${{ steps.validation.outputs.status }}" = "failed" ]; then
+          echo "❌ PROBLEMAS DETECTADOS - Ver verificación final para decisión de bloqueo"
         else
-          echo "❌ FALLA DE SEGURIDAD - Se requiere atención inmediata"
+          echo "ℹ️ ESTADO DESCONOCIDO - Revisar archivos de reporte para más información"
         fi
+        
+        echo ""
+        echo "📄 Todos los reportes están disponibles como artifacts"
+        echo "📍 Descargar el artifact 'security-reports-prueba' para ver detalles completos"
