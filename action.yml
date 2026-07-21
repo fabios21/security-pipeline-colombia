@@ -128,10 +128,20 @@ runs:
         echo "🌐 Zona horaria: ${{ inputs.timezone }}"
         echo "📄 Idioma reportes: ${{ inputs.report-language }}"
         
-        # Configurar variables de entorno
+        # Configurar variables de entorno - usar locale compatible con Linux
         echo "TIMEZONE=${{ inputs.timezone }}" >> $GITHUB_ENV
-        echo "LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
-        echo "LC_ALL=${{ inputs.report-language }}" >> $GITHUB_ENV
+        
+        # Usar locale compatible (es_ES.UTF-8 en lugar de es_CO)
+        if [[ "${{ inputs.report-language }}" == "es_CO" ]]; then
+          echo "LANG=es_ES.UTF-8" >> $GITHUB_ENV
+          echo "LC_ALL=es_ES.UTF-8" >> $GITHUB_ENV
+          echo "REPORT_LANG=es_CO" >> $GITHUB_ENV
+        else
+          echo "LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
+          echo "LC_ALL=${{ inputs.report-language }}" >> $GITHUB_ENV
+          echo "REPORT_LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
+        fi
+        
         echo "COMPLIANCE_LEVEL=${{ inputs.compliance-level }}" >> $GITHUB_ENV
         
     # Paso 3: Setup de herramientas
@@ -140,26 +150,44 @@ runs:
       run: |
         echo "📦 Configurando herramientas de seguridad..."
         
-        # Instalar gitleaks si no está instalado
+        # Actualizar apt-get primero
+        sudo apt-get update || true
+        
+        # Instalar dependencias del sistema
+        sudo apt-get install -y curl wget jq python3-pip
+        
+        # Instalar gitleaks usando método oficial
         if ! command -v gitleaks &> /dev/null; then
           echo "Instalando gitleaks..."
-          curl -s https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh
+          # Método 1: Descargar binary directamente
+          GITLEAKS_VERSION="v8.18.2"
+          wget https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
+          tar -xzf gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
           sudo mv gitleaks /usr/local/bin/
+          rm gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
+          chmod +x /usr/local/bin/gitleaks
         fi
         
-        # Instalar semgrep si no está instalado
+        # Instalar semgrep
         if ! command -v semgrep &> /dev/null; then
           echo "Instalando semgrep..."
-          pip install semgrep
+          python3 -m pip install --upgrade pip
+          python3 -m pip install semgrep
         fi
         
         # Instalar Python dependencies para scripts
         echo "Instalando dependencias Python..."
-        pip install jq jsonschema jinja2 python-dateutil pyyaml
+        python3 -m pip install jq jsonschema jinja2 python-dateutil pyyaml pandas
+        
+        # Instalar locale español
+        sudo apt-get install -y language-pack-es || true
         
         # Verificar instalaciones
-        gitleaks version
-        semgrep --version
+        echo "Verificando instalaciones..."
+        gitleaks version || echo "Gitleaks no se pudo verificar"
+        semgrep --version || echo "Semgrep no se pudo verificar"
+        python3 --version
+        pip --version
         
     # Paso 4: Instalar scripts y configuraciones
     - name: Install pipeline files
@@ -331,7 +359,7 @@ runs:
         echo "compliance_status=$COMPLIANCE_STATUS" >> $GITHUB_OUTPUT
         echo "Estado de cumplimiento: $COMPLIANCE_STATUS"
         
-    # Paso 9: Generar reporte en español
+    # Paso 9: Generar reporte
     - name: Generate security report
       id: generate-report
       shell: bash
@@ -343,33 +371,38 @@ runs:
         
         REPORT_URLS=""
         
+        # Usar el locale configurado en el entorno
+        REPORT_LANG="${{ env.REPORT_LANG }}"
+        
         for format in "${FORMATS[@]}"; do
           case $format in
             html)
               python .github/scripts/generate_report.py \
                 --secrets gitleaks-report.json \
                 --sast semgrep-results.sarif \
-                --output security-report-es.html \
-                --format html
+                --output security-report-$REPORT_LANG.html \
+                --format html \
+                --language $REPORT_LANG
               
               # Subir artifact
-              echo "📊 Reporte HTML generado: security-report-es.html"
-              REPORT_URLS="$REPORT_URLS,security-report-es.html"
+              echo "📊 Reporte HTML generado: security-report-$REPORT_LANG.html"
+              REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.html"
               ;;
             markdown)
               python .github/scripts/generate_report.py \
                 --secrets gitleaks-report.json \
                 --sast semgrep-results.sarif \
-                --output security-report-es.md \
-                --format markdown
+                --output security-report-$REPORT_LANG.md \
+                --format markdown \
+                --language $REPORT_LANG
               
-              echo "📊 Reporte Markdown generado: security-report-es.md"
-              REPORT_URLS="$REPORT_URLS,security-report-es.md"
+              echo "📊 Reporte Markdown generado: security-report-$REPORT_LANG.md"
+              REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.md"
               ;;
             json)
-              cp validation-result.json security-report-es.json
-              echo "📊 Reporte JSON generado: security-report-es.json"
-              REPORT_URLS="$REPORT_URLS,security-report-es.json"
+              cp validation-result.json security-report-$REPORT_LANG.json
+              echo "📊 Reporte JSON generado: security-report-$REPORT_LANG.json"
+              REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.json"
               ;;
           esac
         done
@@ -381,15 +414,22 @@ runs:
     # Paso 10: Subir artifacts
     - name: Upload security reports
       if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-reports
-        path: |
-          gitleaks-report.json
-          semgrep-results.sarif
-          validation-result.json
-          security-report-es.*
-        retention-days: 30
+      shell: bash
+      run: |
+        echo "📤 Subiendo artifacts de seguridad..."
+        REPORT_LANG="${{ env.REPORT_LANG }}"
+        
+        # Listar archivos que se van a subir
+        echo "Archivos a subir:"
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json security-report-$REPORT_LANG.* 2>/dev/null || true
+        
+        # Usar acciones/upload-artifact
+        echo "::group::Subiendo artifacts"
+        npx @actions/upload-artifact@v4 \
+          --name "security-reports-$REPORT_LANG" \
+          --path "gitleaks-report.json,semgrep-results.sarif,validation-result.json,security-report-$REPORT_LANG.*" \
+          --retention-days 30
+        echo "::endgroup::"
         
     # Paso 11: Enviar notificaciones
     - name: Send notifications

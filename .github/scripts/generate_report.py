@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Generador de reportes de seguridad en español para stakeholders no técnicos
+Generador de reportes de seguridad para stakeholders no técnicos
 
 Este script procesa resultados de análisis de seguridad y genera reportes
-comprensibles en español, incluyendo secciones específicas sobre cumplimiento
+comprensibles, incluyendo secciones específicas sobre cumplimiento
 de la Ley 1581 de Protección de Datos de Colombia.
 """
 
@@ -13,15 +13,21 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import html
+import os
 
 
 class SecurityReportGenerator:
-    def __init__(self):
+    def __init__(self, language="es_CO"):
+        self.language = language
+        
+        # Definir traducciones según idioma
+        self.translations = self._get_translations(language)
+        
         self.report_data = {
             "metadata": {
                 "generated_at": datetime.now().isoformat(),
                 "timezone": "America/Bogota",
-                "language": "es_CO",
+                "language": language,
                 "jurisdiction": "Colombia"
             },
             "executive_summary": {},
@@ -29,6 +35,43 @@ class SecurityReportGenerator:
             "compliance_analysis": {},
             "recommendations": []
         }
+    
+    def _get_translations(self, language):
+        """Obtener traducciones según el idioma"""
+        if language in ["es_CO", "es"]:
+            return {
+                "report_title": "Reporte de Seguridad Informática",
+                "report_subtitle": "Análisis automatizado para cumplimiento normativo",
+                "jurisdiction": "Colombia",
+                "status_passed": "aprobado",
+                "status_failed": "rechazado",
+                "status_requires_approval": "requiere aprobación",
+                "status_unknown": "desconocido",
+                "no_critical_issues": "No se detectaron problemas de seguridad críticos en el análisis",
+                "data_leakage_detected": "Se detectaron {} posibles fugas de información sensible",
+                "critical_vulnerabilities_detected": "Se encontraron {} vulnerabilidades críticas que requieren atención inmediata",
+                "high_vulnerabilities_detected": "Se encontraron {} vulnerabilidades de alto riesgo",
+                "business_impact_high": "ALTO IMPACTO - Existen riesgos significativos que podrían afectar la continuidad del negocio y generar responsabilidades legales.",
+                "business_impact_moderate": "IMPACTO MODERADO - Se requieren controles adicionales antes de proceder con los cambios propuestos.",
+                "business_impact_low": "BAJO IMPACTO - El nivel de seguridad actual es apropiado para las operaciones del negocio."
+            }
+        else:  # English
+            return {
+                "report_title": "Security Report",
+                "report_subtitle": "Automated analysis for regulatory compliance",
+                "jurisdiction": "Colombia",
+                "status_passed": "passed",
+                "status_failed": "failed",
+                "status_requires_approval": "requires approval",
+                "status_unknown": "unknown",
+                "no_critical_issues": "No critical security issues detected in the analysis",
+                "data_leakage_detected": "Detected {} potential sensitive information leaks",
+                "critical_vulnerabilities_detected": "Found {} critical vulnerabilities requiring immediate attention",
+                "high_vulnerabilities_detected": "Found {} high-risk vulnerabilities",
+                "business_impact_high": "HIGH IMPACT - Significant risks exist that could affect business continuity and generate legal liabilities.",
+                "business_impact_moderate": "MODERATE IMPACT - Additional controls required before proceeding with proposed changes.",
+                "business_impact_low": "LOW IMPACT - Current security level is appropriate for business operations."
+            }
     
     def load_validation_result(self, filepath: Path) -> bool:
         """Carga resultado de validación previa"""
@@ -41,57 +84,46 @@ class SecurityReportGenerator:
             return False
     
     def generate_executive_summary(self) -> Dict:
-        """Genera resumen ejecutivo en español no técnico"""
+        """Genera resumen ejecutivo en el idioma configurado"""
         summary = {
-            "title": "Reporte de Seguridad Informática",
-            "subtitle": "Análisis automatizado para cumplimiento normativo",
+            "title": self.translations["report_title"],
+            "subtitle": self.translations["report_subtitle"],
             "overall_status": self._translate_status(self.validation_result.get("status", "unknown")),
             "key_findings": [],
             "business_impact": ""
         }
         
-        # Traducir hallazgos clave
+        # Traducir hallazgos clave usando las traducciones
         secrets_count = self.validation_result["summary"]["total_secrets"]
         vuln_counts = self.validation_result["summary"]
         
         if secrets_count > 0:
             summary["key_findings"].append(
-                f"Se detectaron {secrets_count} posibles fugas de información sensible"
+                self.translations["data_leakage_detected"].format(secrets_count)
             )
         
         if vuln_counts["critical_vulnerabilities"] > 0:
             summary["key_findings"].append(
-                f"Se encontraron {vuln_counts['critical_vulnerabilities']} "
-                f"vulnerabilidades críticas que requieren atención inmediata"
+                self.translations["critical_vulnerabilities_detected"].format(vuln_counts['critical_vulnerabilities'])
             )
         
         if vuln_counts["high_vulnerabilities"] > 0:
             summary["key_findings"].append(
-                f"Se encontraron {vuln_counts['high_vulnerabilities']} "
-                f"vulnerabilidades de alto riesgo"
+                self.translations["high_vulnerabilities_detected"].format(vuln_counts['high_vulnerabilities'])
             )
         
         if not summary["key_findings"]:
             summary["key_findings"].append(
-                "No se detectaron problemas de seguridad críticos en el análisis"
+                self.translations["no_critical_issues"]
             )
         
-        # Impacto empresarial
+        # Impacto empresarial traducido
         if self.validation_result["status"] == "failed":
-            summary["business_impact"] = (
-                "ALTO IMPACTO - Existen riesgos significativos que podrían afectar "
-                "la continuidad del negocio y generar responsabilidades legales."
-            )
+            summary["business_impact"] = self.translations["business_impact_high"]
         elif self.validation_result["status"] == "requires_approval":
-            summary["business_impact"] = (
-                "IMPACTO MODERADO - Se requieren controles adicionales antes de "
-                "proceder con los cambios propuestos."
-            )
+            summary["business_impact"] = self.translations["business_impact_moderate"]
         else:
-            summary["business_impact"] = (
-                "BAJO IMPACTO - El nivel de seguridad actual es apropiado para "
-                "las operaciones del negocio."
-            )
+            summary["business_impact"] = self.translations["business_impact_low"]
         
         return summary
     
@@ -543,19 +575,19 @@ class SecurityReportGenerator:
         return md
     
     def _translate_status(self, status: str) -> str:
-        """Traduce estados técnicos a español"""
-        translations = {
-            "passed": "aprobado",
-            "failed": "rechazado",
-            "requires_approval": "requiere aprobación",
-            "unknown": "desconocido"
+        """Traduce estados técnicos según el idioma configurado"""
+        translation_map = {
+            "passed": self.translations["status_passed"],
+            "failed": self.translations["status_failed"],
+            "requires_approval": self.translations["status_requires_approval"],
+            "unknown": self.translations["status_unknown"]
         }
-        return translations.get(status, status)
+        return translation_map.get(status, status)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generador de reportes de seguridad en español",
+        description="Generador de reportes de seguridad multilingüe",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
@@ -567,39 +599,87 @@ def main():
     
     parser.add_argument(
         "--output",
-        default="security-report-es.html",
+        default="security-report.html",
         help="Nombre base para archivos de salida (se generarán .html y .md)"
+    )
+    
+    parser.add_argument(
+        "--format",
+        choices=['html', 'markdown', 'both'],
+        default='both',
+        help="Formato de salida"
+    )
+    
+    parser.add_argument(
+        "--language",
+        default="es_CO",
+        choices=['es_CO', 'es', 'en'],
+        help="Idioma del reporte"
+    )
+    
+    parser.add_argument(
+        "--secrets",
+        help="Ruta al archivo de resultados de gitleaks (JSON)"
+    )
+    
+    parser.add_argument(
+        "--sast",
+        help="Ruta al archivo de resultados de SAST (SARIF)"
     )
     
     args = parser.parse_args()
     
-    generator = SecurityReportGenerator()
+    generator = SecurityReportGenerator(language=args.language)
     
     if not generator.load_validation_result(Path(args.validation)):
         print("Error: No se pudo cargar el resultado de validación")
         sys.exit(1)
     
-    # Generar reportes
-    html_content = generator.generate_html_report()
-    md_content = generator.generate_markdown_report()
+    # Generar reportes según formato solicitado
+    if args.format in ['html', 'both']:
+        html_content = generator.generate_html_report()
+        html_path = Path(args.output)
+        if not args.output.endswith('.html'):
+            html_path = Path(f"{args.output}.html")
+        
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
     
-    # Guardar reportes
-    html_path = Path(args.output)
-    md_path = Path(args.output.replace('.html', '.md') if args.output.endswith('.html') else args.output + '.md')
+    if args.format in ['markdown', 'both']:
+        md_content = generator.generate_markdown_report()
+        md_path = Path(args.output)
+        if not args.output.endswith('.md'):
+            md_path = Path(f"{args.output}.md")
+        
+        with open(md_path, 'w', encoding='utf-8') as f:
+            f.write(md_content)
     
-    with open(html_path, 'w', encoding='utf-8') as f:
-        f.write(html_content)
+    # Mensaje de éxito traducido
+    success_msg = {
+        "es_CO": "✅ Reportes generados exitosamente:",
+        "es": "✅ Reportes generados exitosamente:",
+        "en": "✅ Reports generated successfully:"
+    }
     
-    with open(md_path, 'w', encoding='utf-8') as f:
-        f.write(md_content)
+    summary_msg = {
+        "es_CO": "📋 Resumen del análisis:",
+        "es": "📋 Resumen del análisis:",
+        "en": "📋 Analysis summary:"
+    }
     
-    print(f"✅ Reportes generados exitosamente:")
-    print(f"   • HTML: {html_path}")
-    print(f"   • Markdown: {md_path}")
-    print(f"\n📋 Resumen del análisis:")
-    print(f"   Estado: {generator._translate_status(generator.validation_result['status']).upper()}")
-    print(f"   Secretos detectados: {generator.validation_result['summary']['total_secrets']}")
-    print(f"   Vulnerabilidades críticas/altas: {generator.validation_result['summary']['critical_vulnerabilities'] + generator.validation_result['summary']['high_vulnerabilities']}")
+    lang = args.language[:2]  # Tomar primeros 2 caracteres
+    
+    print(f"{success_msg.get(lang, success_msg['es_CO'])}")
+    
+    if args.format in ['html', 'both']:
+        print(f"   • HTML: {html_path}")
+    if args.format in ['markdown', 'both']:
+        print(f"   • Markdown: {md_path}")
+    
+    print(f"\n{summary_msg.get(lang, summary_msg['es_CO'])}")
+    print(f"   Status: {generator._translate_status(generator.validation_result['status']).upper()}")
+    print(f"   Secrets detected: {generator.validation_result['summary']['total_secrets']}")
+    print(f"   Critical/High vulnerabilities: {generator.validation_result['summary']['critical_vulnerabilities'] + generator.validation_result['summary']['high_vulnerabilities']}")
 
 
 if __name__ == "__main__":
