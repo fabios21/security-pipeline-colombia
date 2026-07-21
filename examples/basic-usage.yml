@@ -32,7 +32,7 @@ jobs:
         
     - name: Upload ALL security reports
       if: always()  # Subir incluso si falla el análisis
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.3.1
       with:
         name: security-reports-complete
         path: |

@@ -20,7 +20,7 @@ steps:
 
   - name: Upload security reports
     if: always()  # IMPORTANTE: Subir incluso si falla el análisis
-    uses: actions/upload-artifact@v4
+    uses: actions/upload-artifact@v4.3.1
     with:
       name: security-reports
       path: |
@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Upload security reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: security-reports
           path: |

@@ -1,0 +1,57 @@
+name: 🔒 Security Pipeline Colombia - Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  security-test:
+    name: 🛡️ Security Analysis with Artifacts
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Necesario para análisis completo
+        
+    - name: Run Security Pipeline Colombia
+      id: security
+      uses: fabios21/security-pipeline-colombia@main
+      with:
+        compliance-level: 'standard'
+        timezone: 'America/Bogota'
+        report-language: 'es_CO'
+        block-on-secrets: true
+        block-on-critical: true
+        block-on-high: false  # No bloquear por altas para testing
+        require-approval-on-medium: true
+        report-formats: 'html,markdown,json'
+        
+    - name: 📤 Upload ALL Security Reports
+      if: always()  # 🔑 CLAVE: Subir incluso si falla la seguridad
+      uses: actions/upload-artifact@v4.3.1
+      with:
+        name: security-reports-prueba
+        path: |
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          visual-report.txt
+          security-report-*.html
+          security-report-*.md
+          security-report-*.json
+        retention-days: 30
+        
+    - name: 📊 Show Files Generated
+      if: always()
+      run: |
+        echo "📁 Archivos generados en el directorio:"
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-*.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
+        echo ""
+        echo "📍 Si ves este mensaje, los archivos SÍ se generaron."
+        echo "   Revisa la sección 'Artifacts' al final de esta ejecución."
+        echo ""
+        echo "🎯 Artifact esperado: 'security-reports-prueba'"
