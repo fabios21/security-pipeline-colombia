@@ -42,7 +42,7 @@ class SecurityValidator:
         }
     
     def load_gitleaks_results(self, filepath: Path) -> bool:
-        """Carga y procesa resultados de gitleaks"""
+        """Carga y procesa resultados de gitleaks con información detallada"""
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -56,12 +56,22 @@ class SecurityValidator:
             
             for finding in findings:
                 if isinstance(finding, dict):
+                    # Extraer información completa del hallazgo
                     secret_finding = {
                         "rule": finding.get("rule", "Unknown"),
+                        "description": finding.get("description", ""),
                         "file": finding.get("file", "Unknown"),
                         "line": finding.get("line", 0),
                         "secret": finding.get("secret", "")[:20] + "..." if finding.get("secret") else "",
-                        "severity": "high"  # Todos los secretos son de alta severidad
+                        "secret_full": finding.get("secret", ""),
+                        "commit": finding.get("commit", ""),
+                        "author": finding.get("author", ""),
+                        "email": finding.get("email", ""),
+                        "date": finding.get("date", ""),
+                        "entropy": finding.get("entropy", 0.0),
+                        "severity": "high",  # Todos los secretos son de alta severidad
+                        "tags": finding.get("tags", []),
+                        "fingerprint": finding.get("fingerprint", "")
                     }
                     self.secret_findings.append(secret_finding)
             
@@ -73,6 +83,20 @@ class SecurityValidator:
                 self.validation_result["compliance"]["ley_1581"]["requires_notification"] = True
                 self.validation_result["compliance"]["ley_1581"]["recommendations"].append(
                     "Se detectaron fugas de datos personales. Notificar al área legal según Ley 1581."
+                )
+            
+            # Análisis adicional por tipo de secreto
+            aws_keys = [s for s in self.secret_findings if "aws" in s["rule"].lower()]
+            api_keys = [s for s in self.secret_findings if "api" in s["rule"].lower()]
+            
+            if aws_keys:
+                self.validation_result["compliance"]["ley_1581"]["recommendations"].append(
+                    f"Se detectaron {len(aws_keys)} claves AWS expuestas. Alto riesgo financiero."
+                )
+            
+            if api_keys:
+                self.validation_result["compliance"]["ley_1581"]["recommendations"].append(
+                    f"Se detectaron {len(api_keys)} API keys expuestas. Riesgo de acceso no autorizado."
                 )
             
             return True
@@ -263,40 +287,153 @@ proporcionando análisis de fugas de datos y reportes comprensibles.
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
     
-    # Imprimir resumen
-    print("\n" + "="*60)
-    print("RESULTADO DE VALIDACIÓN DE SEGURIDAD - COLOMBIA")
-    print("="*60)
+    # Imprimir presentación gráfica de hallazgos
+    print("\n" + "="*80)
+    print("🔒 RESULTADO DE ANÁLISIS DE SEGURIDAD - COLOMBIA")
+    print("="*80)
+    
+    # Banner de estado con emojis
+    status_icons = {
+        "passed": "✅",
+        "failed": "❌", 
+        "requires_approval": "⚠️"
+    }
+    
+    status_icon = status_icons.get(result["status"], "❓")
+    print(f"\n{status_icon} ESTADO FINAL: {result['status'].upper()}")
+    print("-" * 40)
     
     summary = result["summary"]
-    print(f"\n📊 Resumen:")
-    print(f"  Secretos detectados: {summary['total_secrets']}")
-    print(f"  Vulnerabilidades totales: {summary['total_vulnerabilities']}")
-    print(f"  • Críticas: {summary['critical_vulnerabilities']}")
-    print(f"  • Altas: {summary['high_vulnerabilities']}")
-    print(f"  • Medias: {summary['medium_vulnerabilities']}")
-    print(f"  • Bajas: {summary['low_vulnerabilities']}")
     
-    print(f"\n🏛️  Cumplimiento Ley 1581:")
+    # 📊 SECCIÓN 1: RESUMEN VISUAL CON EMOJIS
+    print(f"\n📊 RESUMEN DE HALLazGOS")
+    print("═" * 40)
+    
+    # Mostrar secreto como tarjetas visuales
+    if summary['total_secrets'] > 0:
+        print(f"\n🔴 SECRETOS EXPUESTOS: {summary['total_secrets']}")
+        print("▔" * 30)
+        
+        # Mostrar cada secreto de manera gráfica
+        for i, secret in enumerate(result["secret_findings"], 1):
+            print(f"\n┌─ SECRETO #{i}")
+            print(f"│  📄 ARCHIVO: {secret['file']}")
+            print(f"│  📍 LÍNEA: {secret['line']}")
+            print(f"│  🔖 REGLA: {secret['rule']}")
+            print(f"│  ⚠️  SEVERIDAD: ALTA")
+            print(f"└─ 🚨 ACCIÓN REQUERIDA: ELIMINAR INMEDIATAMENTE")
+    
+    # Mostrar vulnerabilidades por severidad
+    if summary['total_vulnerabilities'] > 0:
+        print(f"\n🟡 VULNERABILIDADES DETECTADAS: {summary['total_vulnerabilities']}")
+        print("▔" * 40)
+        
+        # Barras visuales para cada nivel de severidad
+        def print_severity_bar(count, label, emoji, color_code="🟢"):
+            if count > 0:
+                bar = "█" * min(count, 10) + f" ({count})"
+                print(f"{emoji} {label}: {bar}")
+        
+        print_severity_bar(summary['critical_vulnerabilities'], "CRÍTICAS", "🔴")
+        print_severity_bar(summary['high_vulnerabilities'], "ALTAS", "🟠") 
+        print_severity_bar(summary['medium_vulnerabilities'], "MEDIAS", "🟡")
+        print_severity_bar(summary['low_vulnerabilities'], "BAJAS", "🟢")
+        
+        # Mostrar vulnerabilidades críticas/altas específicas
+        critical_high_vulns = [v for v in result["vulnerability_findings"] 
+                              if v.get("severity") in ["critical", "high"]]
+        
+        if critical_high_vulns:
+            print(f"\n🔴 VULNERABILIDADES CRÍTICAS/ALTAS:")
+            for i, vuln in enumerate(critical_high_vulns[:3], 1):  # Mostrar máximo 3
+                print(f"\n  {i}. 📄 {vuln['file']}:{vuln['line']}")
+                print(f"     📝 {vuln['description'][:60]}...")
+                print(f"     ⚠️  {vuln['severity'].upper()}")
+    
+    # 📋 SECCIÓN 2: CUMPLIMIENTO NORMATIVO
+    print(f"\n🏛️  CUMPLIMIENTO NORMATIVO - LEY 1581")
+    print("═" * 40)
+    
     compliance = result["compliance"]["ley_1581"]
-    print(f"  Fuga de datos detectada: {'SÍ' if compliance['data_leakage_detected'] else 'NO'}")
-    print(f"  Notificación requerida: {'SÍ' if compliance['requires_notification'] else 'NO'}")
     
-    if compliance["recommendations"]:
-        print(f"\n  Recomendaciones:")
-        for rec in compliance["recommendations"]:
-            print(f"  • {rec}")
+    if compliance["data_leakage_detected"]:
+        print(f"\n🔴 FUGAS DE DATOS DETECTADAS: SÍ")
+        print("   └─ 🚨 NOTIFICACIÓN LEGAL REQUERIDA")
+        print("   └─ ⏰ PLAZO: 72 horas hábiles según SIC")
+    else:
+        print(f"\n🟢 FUGAS DE DATOS DETECTADAS: NO")
+        print("   └─ ✅ Cumple con principios de seguridad Ley 1581")
     
-    print(f"\n🔒 Estado de validación: {result['status'].upper()}")
+    if compliance["requires_notification"]:
+        print(f"\n📧 NOTIFICACIÓN REQUERIDA: SÍ")
+        print("   └─ 📋 Titulares de datos afectados")
+        print("   └─ 🏛️  Superintendencia de Industria y Comercio (SIC)")
+    
+    # 💡 SECCIÓN 3: RECOMENDACIONES VISUALES
+    if compliance["recommendations"] or summary['total_secrets'] > 0 or summary['critical_vulnerabilities'] > 0:
+        print(f"\n💡 RECOMENDACIONES DE ACCIÓN")
+        print("═" * 40)
+        
+        if summary['total_secrets'] > 0:
+            print(f"\n🔴 PRIORIDAD ALTA:")
+            print("   1. 🔑 Implementar sistema de gestión de secretos (Vault, Secrets Manager)")
+            print("   2. 🗑️  Eliminar credenciales del código fuente")
+            print("   3. 📋 Revisar historial de commits para otras exposiciones")
+        
+        if summary['critical_vulnerabilities'] > 0:
+            print(f"\n🟠 PRIORIDAD MEDIA:")
+            print("   1. 🔧 Corregir vulnerabilidades críticas en 7 días hábiles")
+            print("   2. 👥 Asignar equipo dedicado de seguridad")
+            print("   3. 📊 Actualizar matriz de riesgos")
+        
+        if compliance["data_leakage_detected"]:
+            print(f"\n🏛️  ACCIONES LEGALES:")
+            print("   1. 📞 Contactar área legal inmediatamente")
+            print("   2. 📄 Documentar incidente según protocolo interno")
+            print("   3. 🕒 Cumplir plazos de notificación Ley 1581")
+    
+    # 🎯 SECCIÓN 4: DECISIÓN FINAL CON ÉNFASIS VISUAL
+    print(f"\n" + "="*80)
     
     if result["status"] == "failed":
-        print("\n❌ MERGE BLOQUEADO - Se detectaron vulnerabilidades críticas/altas o secretos expuestos")
+        print(f"\n{'❌' * 10} DECISIÓN FINAL {'❌' * 10}")
+        print(f"\n🚫 MERGE BLOQUEADO AUTOMÁTICAMENTE")
+        print(f"\n📋 RAZONES:")
+        
+        if summary['total_secrets'] > 0:
+            print(f"   • 🔴 {summary['total_secrets']} secretos expuestos detectados")
+        
+        critical_high_count = summary['critical_vulnerabilities'] + summary['high_vulnerabilities']
+        if critical_high_count > 0:
+            print(f"   • 🟠 {critical_high_count} vulnerabilidades críticas/altas")
+        
+        print(f"\n📞 CONTACTOS URGENTES:")
+        print(f"   • 👨‍💼 Responsable de seguridad: seguridad@empresa.co")
+        print(f"   • ⚖️  Área legal: legal@empresa.co")
+        
         sys.exit(1)
+        
     elif result["status"] == "requires_approval":
-        print("\n⚠️  APROBACIÓN REQUERIDA - Se detectaron vulnerabilidades medias/bajas")
+        print(f"\n{'⚠️ ' * 10} DECISIÓN FINAL {' ⚠️' * 10}")
+        print(f"\n⏳ APROBACIÓN MANUAL REQUERIDA")
+        print(f"\n📋 DETALLES:")
+        print(f"   • 🟡 {summary['medium_vulnerabilities']} vulnerabilidades medias")
+        print(f"   • 🟢 {summary['low_vulnerabilities']} vulnerabilidades bajas")
+        print(f"\n✅ ACCIONES PERMITIDAS:")
+        print(f"   • 📝 Revisión técnica por equipo de seguridad")
+        print(f"   • ✍️  Aprobación manual por responsable")
+        
         sys.exit(0)
+        
     else:
-        print("\n✅ VALIDACIÓN EXITOSA - No se detectaron problemas de seguridad críticos")
+        print(f"\n{'✅' * 10} DECISIÓN FINAL {'✅' * 10}")
+        print(f"\n🎉 ¡ANÁLISIS EXITOSO!")
+        print(f"\n📊 RESUMEN POSITIVO:")
+        print(f"   • 🔒 0 secretos expuestos")
+        print(f"   • 🛡️  0 vulnerabilidades críticas/altas")
+        print(f"   • 📋 Cumple con Ley 1581")
+        print(f"\n🚀 ACCIÓN: MERGE PERMITIDO")
+        
         sys.exit(0)
 
 

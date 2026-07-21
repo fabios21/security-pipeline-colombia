@@ -445,16 +445,31 @@ runs:
           echo '{"runs": []}' > "$SAST_FILE"
         fi
         
+        # Ejecutar validación principal (con presentación gráfica mejorada)
         python .github/scripts/validate_security.py \
           --secrets "$SECRETS_FILE" \
           --sast "$SAST_FILE" \
           --output validation-result.json
+        
+        # Generar reporte visual adicional
+        if [ -f "validation-result.json" ]; then
+          echo "🎨 Generando reporte visual de hallazgos..."
+          python .github/scripts/visual_report.py \
+            --validation validation-result.json \
+            --output visual-report.txt
+        fi
         
         # Leer resultado de validación
         if [ -f "validation-result.json" ]; then
           STATUS=$(jq -r '.status' validation-result.json)
           echo "status=$STATUS" >> $GITHUB_OUTPUT
           echo "Estado de validación: $STATUS"
+          
+          # Mostrar resumen visual si existe
+          if [ -f "visual-report.txt" ]; then
+            echo "📊 Resumen visual generado:"
+            cat visual-report.txt
+          fi
         else
           echo "status=error" >> $GITHUB_OUTPUT
           echo "Error generando resultado de validación"

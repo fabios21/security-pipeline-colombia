@@ -14,6 +14,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - **Variable initialization**: Added proper initialization for SECRET_COUNT and vulnerability variables
 - **Error handling**: Improved error handling in action.yml steps
 
+### Added
+- **Presentación visual mejorada**: Reportes gráficos con emojis y colores para hallazgos de seguridad
+- **Nuevo script visual_report.py**: Genera reportes en formato visual con barras de progreso y tarjetas
+- **CSS mejorado**: Estilos visuales mejorados en reportes HTML con animaciones y gradientes
+- **Categorización de secretos**: Clasificación visual por tipo (AWS, Stripe, API keys, etc.)
+- **Indicadores de severidad**: Barras visuales y badges de colores para diferentes niveles de riesgo
+
 ## [1.0.5] - 2026-07-20
 
 ### Fixed

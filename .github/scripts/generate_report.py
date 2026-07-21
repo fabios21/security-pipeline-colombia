@@ -246,6 +246,7 @@ class SecurityReportGenerator:
         .header h1 {{
             margin: 0;
             font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }}
         
         .header .subtitle {{
@@ -256,78 +257,217 @@ class SecurityReportGenerator:
         
         .status-badge {{
             display: inline-block;
-            padding: 8px 20px;
-            border-radius: 20px;
+            padding: 12px 25px;
+            border-radius: 25px;
             font-weight: bold;
             margin-top: 15px;
+            font-size: 1.1em;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
         }}
         
-        .status-passed {{ background-color: #4caf50; color: white; }}
-        .status-requires-approval {{ background-color: #ff9800; color: white; }}
-        .status-failed {{ background-color: #f44336; color: white; }}
+        .status-passed {{ 
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            color: white;
+            border: 2px solid #2e7d32;
+        }}
+        .status-requires-approval {{ 
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            border: 2px solid #f57c00;
+        }}
+        .status-failed {{ 
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            border: 2px solid #d32f2f;
+        }}
         
         .section {{
             background: white;
             padding: 25px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
         }}
         
         .section h2 {{
             color: #0d47a1;
-            border-bottom: 2px solid #0d47a1;
-            padding-bottom: 10px;
+            border-bottom: 3px solid #0d47a1;
+            padding-bottom: 12px;
             margin-top: 0;
+            font-size: 1.8em;
         }}
         
-        .finding-card {{
-            background: #f8f9fa;
-            border-left: 4px solid #0d47a1;
+        .severity-card {{
+            background: white;
+            border-radius: 8px;
             padding: 15px;
-            margin: 10px 0;
-            border-radius: 4px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 6px solid;
+            transition: transform 0.2s;
         }}
         
-        .finding-critical {{ border-left-color: #f44336; }}
-        .finding-high {{ border-left-color: #ff9800; }}
-        .finding-medium {{ border-left-color: #ffc107; }}
-        .finding-low {{ border-left-color: #4caf50; }}
+        .severity-card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }}
+        
+        .severity-critical {{ 
+            border-left-color: #d32f2f;
+            background: linear-gradient(to right, #ffebee, white);
+        }}
+        .severity-high {{ 
+            border-left-color: #f57c00;
+            background: linear-gradient(to right, #fff3e0, white);
+        }}
+        .severity-medium {{ 
+            border-left-color: #ffb300;
+            background: linear-gradient(to right, #fff8e1, white);
+        }}
+        .severity-low {{ 
+            border-left-color: #388e3c;
+            background: linear-gradient(to right, #e8f5e9, white);
+        }}
+        
+        .secret-finding {{
+            background: #fff8e1;
+            border-left: 6px solid #ff9800;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }}
+        
+        .secret-finding.critical {{
+            background: #ffebee;
+            border-left-color: #f44336;
+        }}
+        
+        .severity-indicator {{
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-right: 10px;
+        }}
+        
+        .critical-indicator {{ background-color: #f44336; color: white; }}
+        .high-indicator {{ background-color: #ff9800; color: white; }}
+        .medium-indicator {{ background-color: #ffc107; color: #333; }}
+        .low-indicator {{ background-color: #4caf50; color: white; }}
         
         .compliance-section {{
-            background: #e8f5e9;
-            border-left: 4px solid #2e7d32;
+            background: linear-gradient(to right, #e8f5e9, #f1f8e9);
+            border-left: 6px solid #2e7d32;
+            border-radius: 10px;
+            padding: 25px;
+        }}
+        
+        .legal-alert {{
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }}
+        
+        .action-required {{
+            background: #ffebee;
+            border: 2px dashed #f44336;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            animation: pulse 2s infinite;
+        }}
+        
+        @keyframes pulse {{
+            0% {{ box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }}
+            70% {{ box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }}
+            100% {{ box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }}
         }}
         
         .footer {{
             text-align: center;
             margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+            padding-top: 25px;
+            border-top: 2px solid #ddd;
             color: #666;
             font-size: 0.9em;
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 25px;
+        }}
+        
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }}
+        
+        .stat-card {{
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            border-top: 4px solid;
+        }}
+        
+        .stat-number {{
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
         }}
         
         table {{
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
         }}
         
         th, td {{
-            padding: 12px;
+            padding: 15px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e0e0e0;
         }}
         
         th {{
-            background-color: #0d47a1;
+            background: linear-gradient(135deg, #0d47a1, #1976d2);
             color: white;
+            font-weight: 600;
         }}
         
         tr:hover {{
-            background-color: #f5f5f5;
+            background-color: #f5f7fa;
         }}
+        
+        tr:nth-child(even) {{
+            background-color: #f9f9f9;
+        }}
+        
+        .progress-bar {{
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }}
+        
+        .progress-fill {{
+            height: 100%;
+            border-radius: 10px;
+        }}
+        
+        .critical-progress {{ background: linear-gradient(to right, #f44336, #d32f2f); }}
+        .high-progress {{ background: linear-gradient(to right, #ff9800, #f57c00); }}
+        .medium-progress {{ background: linear-gradient(to right, #ffc107, #ffa000); }}
+        .low-progress {{ background: linear-gradient(to right, #4caf50, #388e3c); }}
     </style>
 </head>
 <body>
