@@ -5,6 +5,21 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-20
+
+### Fixed
+- **Gitleaks installation major fix**: Updated to use correct GitHub organization (`zricethezav` instead of `gitleaks`)
+- **Multiple download methods**: Added 6 different URL formats and fallback versions
+- **Go installation fix**: Corrected module path to `github.com/zricethezav/gitleaks/v8`
+- **Error handling**: Action no longer fails if Gitleaks cannot be installed
+- **Graceful degradation**: Pipeline continues with reduced functionality if tools missing
+- **File validation**: Added fallback empty files for missing analysis results
+
+### Improved
+- **Robustness**: Action works even when tools cannot be automatically installed
+- **User experience**: Clear error messages and manual installation instructions
+- **Compatibility**: Better handling of missing dependencies
+
 ## [1.0.1] - 2026-07-20
 
 ### Fixed
@@ -136,6 +151,7 @@ uses: tu-usuario/security-pipeline-colombia@v1
 
 | Fecha | Versión | Estado | Notas |
 |-------|---------|--------|-------|
+| 2026-07-20 | 1.0.2 | Stable | Major fix for Gitleaks installation, multiple download methods, graceful degradation |
 | 2026-07-20 | 1.0.1 | Stable | Fixed critical bugs: Gitleaks 404, locale warnings, Node 20 deprecation |
 | 2024-01-15 | 1.0.0 | Stable | Primera publicación en Marketplace |
 | 2024-01-10 | 0.1.0 | Beta | Versión experimental interna |

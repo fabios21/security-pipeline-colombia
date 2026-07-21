@@ -41,7 +41,7 @@
 ### Opción 2: Uso manual en workflow
 ```yaml
 - name: Security Pipeline Colombia
-  uses: tu-usuario/security-pipeline-colombia@v1.0.1
+  uses: tu-usuario/security-pipeline-colombia@v1.0.2
   with:
     compliance-level: 'ley_1581'
     report-language: 'es_CO'
