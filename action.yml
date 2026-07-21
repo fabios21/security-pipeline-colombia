@@ -310,10 +310,15 @@ runs:
         cp $GITHUB_ACTION_PATH/.semgrep.yml . || true
         cp $GITHUB_ACTION_PATH/security-report-template.md . || true
         
-        # Copiar configuración personalizada si se proporciona
-        if [ -f "${{ inputs.config-path }}" ]; then
-          echo "Usando configuración personalizada: ${{ inputs.config-path }}"
-          cp "${{ inputs.config-path }}" .gitleaks.toml
+        # Copiar configuración personalizada si se proporciona y es diferente del default
+        CONFIG_PATH="${{ inputs.config-path }}"
+        if [ -f "$CONFIG_PATH" ] && [ "$CONFIG_PATH" != ".gitleaks.toml" ]; then
+          echo "Usando configuración personalizada: $CONFIG_PATH"
+          cp "$CONFIG_PATH" .gitleaks.toml
+        elif [ -f "$CONFIG_PATH" ] && [ "$CONFIG_PATH" = ".gitleaks.toml" ]; then
+          echo "Usando configuración predeterminada: .gitleaks.toml"
+        else
+          echo "No se encontró archivo de configuración personalizada, usando predeterminado"
         fi
         
         # Verificar que los archivos se copiaron

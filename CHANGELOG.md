@@ -5,6 +5,17 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-07-20
+
+### Fixed
+- **File copy error**: Fixed `cp: '.gitleaks.toml' and '.gitleaks.toml' are the same file` error
+- **Configuration handling**: Improved logic for default vs custom configuration files
+- **Path comparison**: Added check to avoid copying file onto itself
+
+### Improved
+- **Error prevention**: Clear distinction between default and custom config paths
+- **User feedback**: Better messages about which configuration is being used
+
 ## [1.0.2] - 2026-07-20
 
 ### Fixed
@@ -151,6 +162,7 @@ uses: tu-usuario/security-pipeline-colombia@v1
 
 | Fecha | Versión | Estado | Notas |
 |-------|---------|--------|-------|
+| 2026-07-20 | 1.0.3 | Stable | Fixed file copy error, improved configuration handling |
 | 2026-07-20 | 1.0.2 | Stable | Major fix for Gitleaks installation, multiple download methods, graceful degradation |
 | 2026-07-20 | 1.0.1 | Stable | Fixed critical bugs: Gitleaks 404, locale warnings, Node 20 deprecation |
 | 2024-01-15 | 1.0.0 | Stable | Primera publicación en Marketplace |
