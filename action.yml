@@ -526,41 +526,145 @@ runs:
         SAST_FILE="semgrep-results.sarif"
         VALIDATION_FILE="validation-result.json"
         
+        echo "🔍 Verificando archivos de entrada..."
+        echo "  - $SECRETS_FILE: $([ -f "$SECRETS_FILE" ] && echo "✅" || echo "❌")"
+        echo "  - $SAST_FILE: $([ -f "$SAST_FILE" ] && echo "✅" || echo "❌")"
+        echo "  - $VALIDATION_FILE: $([ -f "$VALIDATION_FILE" ] && echo "✅" || echo "❌")"
+        
         # Asegurar que los archivos existan
         [ -f "$SECRETS_FILE" ] || echo '{"findings": []}' > "$SECRETS_FILE"
         [ -f "$SAST_FILE" ] || echo '{"runs": []}' > "$SAST_FILE"
         [ -f "$VALIDATION_FILE" ] || echo '{"status": "error", "summary": {"total_secrets": 0, "total_vulnerabilities": 0, "critical_vulnerabilities": 0, "high_vulnerabilities": 0, "medium_vulnerabilities": 0, "low_vulnerabilities": 0}}' > "$VALIDATION_FILE"
         
+        # Verificar que los scripts existan
+        echo "🔍 Verificando scripts..."
+        echo "  - generate_report.py: $([ -f ".github/scripts/generate_report.py" ] && echo "✅" || echo "❌")"
+        echo "  - visual_report.py: $([ -f ".github/scripts/visual_report.py" ] && echo "✅" || echo "❌")"
+        
+        # Generar reporte visual PRIMERO (más simple)
+        echo "🎨 Generando reporte visual..."
+        if [ -f ".github/scripts/visual_report.py" ] && [ -f "$VALIDATION_FILE" ]; then
+          python3 .github/scripts/visual_report.py \
+            --validation "$VALIDATION_FILE" \
+            --output visual-report.txt || {
+            echo "⚠️ Error generando reporte visual, creando uno básico..."
+            echo "📊 REPORTE VISUAL DE SEGURIDAD" > visual-report.txt
+            echo "============================" >> visual-report.txt
+            echo "" >> visual-report.txt
+            echo "❌ Error: No se pudo generar el reporte visual completo" >> visual-report.txt
+            echo "📄 Revisar validation-result.json para detalles" >> visual-report.txt
+          }
+        else
+          echo "⚠️ Script visual_report.py no encontrado, creando reporte básico..."
+          echo "📊 REPORTE VISUAL BÁSICO" > visual-report.txt
+          echo "======================" >> visual-report.txt
+          if [ -f "$VALIDATION_FILE" ]; then
+            echo "Estado: $(jq -r '.status' "$VALIDATION_FILE" 2>/dev/null || echo "unknown")" >> visual-report.txt
+            echo "Secretos: $(jq -r '.summary.total_secrets' "$VALIDATION_FILE" 2>/dev/null || echo "0")" >> visual-report.txt
+            echo "Vulnerabilidades: $(jq -r '.summary.total_vulnerabilities' "$VALIDATION_FILE" 2>/dev/null || echo "0")" >> visual-report.txt
+          fi
+        fi
+        
+        # Generar reportes en diferentes formatos
         for format in "${FORMATS[@]}"; do
+          echo "📋 Generando reporte en formato: $format"
           case $format in
             html)
-              python .github/scripts/generate_report.py \
-                --validation "$VALIDATION_FILE" \
-                --output security-report-$REPORT_LANG.html \
-                --format html \
-                --language $REPORT_LANG
+              if [ -f ".github/scripts/generate_report.py" ]; then
+                python3 .github/scripts/generate_report.py \
+                  --validation "$VALIDATION_FILE" \
+                  --output security-report-$REPORT_LANG.html \
+                  --format html \
+                  --language $REPORT_LANG || {
+                  echo "⚠️ Error generando reporte HTML, creando uno básico..."
+                  cat > security-report-$REPORT_LANG.html << EOF
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Seguridad</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; }
+        .status { background: #ffebee; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .error { color: #d32f2f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 Reporte de Seguridad Informática</h1>
+        <p>Generado: $(date)</p>
+    </div>
+    <div class="status">
+        <h2>Estado del Análisis</h2>
+        <p class="error">⚠️ Error generando reporte completo</p>
+        <p>Revisar validation-result.json para información detallada.</p>
+    </div>
+</body>
+</html>
+EOF
+                }
+              else
+                echo "⚠️ Script generate_report.py no encontrado, saltando reporte HTML"
+              fi
               
-              # Subir artifact
-              echo "📊 Reporte HTML generado: security-report-$REPORT_LANG.html"
+              echo "📊 Reporte HTML: security-report-$REPORT_LANG.html"
               REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.html"
               ;;
             markdown)
-              python .github/scripts/generate_report.py \
-                --validation "$VALIDATION_FILE" \
-                --output security-report-$REPORT_LANG.md \
-                --format markdown \
-                --language $REPORT_LANG
+              if [ -f ".github/scripts/generate_report.py" ]; then
+                python3 .github/scripts/generate_report.py \
+                  --validation "$VALIDATION_FILE" \
+                  --output security-report-$REPORT_LANG.md \
+                  --format markdown \
+                  --language $REPORT_LANG || {
+                  echo "⚠️ Error generando reporte Markdown, creando uno básico..."
+                  cat > security-report-$REPORT_LANG.md << EOF
+# 🔒 Reporte de Seguridad Informática
+
+**Generado:** $(date)
+
+## Estado del Análisis
+
+⚠️ **Error:** No se pudo generar el reporte completo.
+
+Revisar \`validation-result.json\` para información detallada.
+
+## Archivos Disponibles
+
+- \`gitleaks-report.json\` - Resultados de secretos
+- \`semgrep-results.sarif\` - Vulnerabilidades SAST
+- \`validation-result.json\` - Resumen de validación
+EOF
+                }
+              else
+                echo "⚠️ Script generate_report.py no encontrado, creando reporte Markdown básico..."
+                cat > security-report-$REPORT_LANG.md << 'EOF'
+# 🔒 Reporte de Seguridad Informática
+
+**Error:** Script de generación no disponible.
+
+## Archivos de Datos Disponibles
+
+Revisar los archivos JSON/SARIF para información detallada.
+EOF
+              fi
               
-              echo "📊 Reporte Markdown generado: security-report-$REPORT_LANG.md"
+              echo "📊 Reporte Markdown: security-report-$REPORT_LANG.md"
               REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.md"
               ;;
             json)
               cp "$VALIDATION_FILE" security-report-$REPORT_LANG.json
-              echo "📊 Reporte JSON generado: security-report-$REPORT_LANG.json"
+              echo "📊 Reporte JSON: security-report-$REPORT_LANG.json"
               REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.json"
               ;;
           esac
         done
+        
+        # Verificar qué archivos se generaron
+        echo ""
+        echo "📁 Archivos generados:"
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
         
         # Remover primera coma
         REPORT_URLS=${REPORT_URLS:1}
