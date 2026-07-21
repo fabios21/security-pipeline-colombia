@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-07-20
+
+### Fixed
+- **Gitleaks configuration error**: Fixed `'Allowlist' expected a map, got 'slice'` error
+- **TOML format**: Updated allowlist section to correct format for Gitleaks v8.x
+- **Configuration compatibility**: Ensured config works with Gitleaks 8.18.1+
+
 ## [1.0.3] - 2026-07-20
 
 ### Fixed
@@ -162,6 +169,7 @@ uses: tu-usuario/security-pipeline-colombia@v1
 
 | Fecha | Versión | Estado | Notas |
 |-------|---------|--------|-------|
+| 2026-07-20 | 1.0.4 | Stable | Fixed Gitleaks configuration error, updated TOML format |
 | 2026-07-20 | 1.0.3 | Stable | Fixed file copy error, improved configuration handling |
 | 2026-07-20 | 1.0.2 | Stable | Major fix for Gitleaks installation, multiple download methods, graceful degradation |
 | 2026-07-20 | 1.0.1 | Stable | Fixed critical bugs: Gitleaks 404, locale warnings, Node 20 deprecation |

@@ -54,8 +54,8 @@ regex = '''(sk|pk)_(test|live)_[0-9a-zA-Z]{24,99}'''
 tags = ["stripe", "api-key"]
 
 # Exclusiones para falsos positivos comunes
-[[allowlist]]
-description = "Archivos de ejemplo y test"
+[allowlist]
+description = "Exclusiones para archivos de prueba y ejemplo"
 paths = [
     "**/test/**",
     "**/tests/**",
@@ -65,9 +65,6 @@ paths = [
     "**/*.test.*",
     "**/*.spec.*"
 ]
-
-[[allowlist]]
-description = "Archivos de configuración con datos de ejemplo"
 files = [
     "(?i).*config.*example.*",
     "(?i).*env.*example.*",
