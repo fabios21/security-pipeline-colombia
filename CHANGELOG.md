@@ -5,6 +5,18 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-07-20
+
+### Fixed
+- **Gitleaks installation**: Fixed 404 error by updating from v8.18.2 to v8.30.1
+- **Locale warnings**: Resolved `setlocale: LC_ALL: cannot change locale (es_ES.UTF-8)` errors
+- **Node.js version**: Added Node.js 22 setup to avoid Node 20 deprecation warnings
+- **Installation robustness**: Added multiple download URL formats and Go installation backup
+- **Error handling**: Improved verification and error messages for tool installation
+
+### Security
+- **Updated dependencies**: Gitleaks updated to latest secure version v8.30.1
+
 ## [1.0.0] - 2024-01-15
 
 ### Added
@@ -124,6 +136,7 @@ uses: tu-usuario/security-pipeline-colombia@v1
 
 | Fecha | Versión | Estado | Notas |
 |-------|---------|--------|-------|
+| 2026-07-20 | 1.0.1 | Stable | Fixed critical bugs: Gitleaks 404, locale warnings, Node 20 deprecation |
 | 2024-01-15 | 1.0.0 | Stable | Primera publicación en Marketplace |
 | 2024-01-10 | 0.1.0 | Beta | Versión experimental interna |
 

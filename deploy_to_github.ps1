@@ -7,7 +7,7 @@ Write-Host "==================================================" -ForegroundColor
 # Configuración
 $repoName = "security-pipeline-colombia"
 $githubUser = "TU_USUARIO_AQUI"  # <-- REEMPLAZAR con tu usuario de GitHub
-$version = "v1.0.0"
+$version = "v1.0.1"
 
 Write-Host "`n📋 Configuración actual:" -ForegroundColor Cyan
 Write-Host "Repositorio: $repoName"

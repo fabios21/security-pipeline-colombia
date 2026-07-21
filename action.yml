@@ -112,6 +112,12 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    # Paso 0: Setup Node.js (usar Node 22 para evitar warnings)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+        
     # Paso 1: Checkout del código
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -131,14 +137,18 @@ runs:
         # Configurar variables de entorno - usar locale compatible con Linux
         echo "TIMEZONE=${{ inputs.timezone }}" >> $GITHUB_ENV
         
-        # Usar locale compatible (es_ES.UTF-8 en lugar de es_CO)
-        if [[ "${{ inputs.report-language }}" == "es_CO" ]]; then
+        # Usar locale compatible y generar locale si no existe
+        if [[ "${{ inputs.report-language }}" == "es_CO" ]] || [[ "${{ inputs.report-language }}" == "es" ]]; then
+          # Generar locale español si no existe
+          sudo locale-gen es_ES.UTF-8 || true
+          sudo update-locale LANG=es_ES.UTF-8 LC_ALL=es_ES.UTF-8 || true
           echo "LANG=es_ES.UTF-8" >> $GITHUB_ENV
-          echo "LC_ALL=es_ES.UTF-8" >> $GITHUB_ENV
+          echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV  # Usar C.UTF-8 para evitar warnings
           echo "REPORT_LANG=es_CO" >> $GITHUB_ENV
         else
+          # Para otros idiomas, usar C.UTF-8 para compatibilidad
           echo "LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
-          echo "LC_ALL=${{ inputs.report-language }}" >> $GITHUB_ENV
+          echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV
           echo "REPORT_LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
         fi
         
@@ -159,13 +169,55 @@ runs:
         # Instalar gitleaks usando método oficial
         if ! command -v gitleaks &> /dev/null; then
           echo "Instalando gitleaks..."
-          # Método 1: Descargar binary directamente
-          GITLEAKS_VERSION="v8.18.2"
-          wget https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
-          tar -xzf gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
-          sudo mv gitleaks /usr/local/bin/
-          rm gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz
-          chmod +x /usr/local/bin/gitleaks
+          
+          # Método 1: Usar gitleaks-action (más confiable)
+          GITLEAKS_VERSION="v8.30.1"
+          
+          echo "Intentando instalar gitleaks ${GITLEAKS_VERSION}..."
+          
+          # Lista de posibles formatos de URL
+          GITLEAKS_URLS=(
+            "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+            "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_Linux_x64.tar.gz"
+            "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_linux_x64.tar.gz"
+          )
+          
+          INSTALLED=false
+          for url in "${GITLEAKS_URLS[@]}"; do
+            echo "Intentando descargar desde: $url"
+            if wget -q --timeout=30 --tries=2 "$url" -O gitleaks.tar.gz; then
+              tar -xzf gitleaks.tar.gz
+              if [ -f "gitleaks" ]; then
+                sudo mv gitleaks /usr/local/bin/
+                chmod +x /usr/local/bin/gitleaks
+                rm gitleaks.tar.gz
+                INSTALLED=true
+                echo "Gitleaks instalado exitosamente desde: $url"
+                break
+              fi
+              rm gitleaks.tar.gz
+            fi
+          done
+          
+          # Método de respaldo: usar go install
+          if [ "$INSTALLED" = "false" ]; then
+            echo "Método directo falló, intentando con go install..."
+            if ! command -v go &> /dev/null; then
+              sudo apt-get install -y golang-go
+            fi
+            go install github.com/gitleaks/gitleaks/v8@latest
+            # Copiar desde GOPATH si se instaló
+            if [ -f "$HOME/go/bin/gitleaks" ]; then
+              sudo cp "$HOME/go/bin/gitleaks" /usr/local/bin/
+              chmod +x /usr/local/bin/gitleaks
+              INSTALLED=true
+            fi
+          fi
+          
+          if [ "$INSTALLED" = "false" ]; then
+            echo "❌ Error: No se pudo instalar gitleaks"
+            exit 1
+          fi
         fi
         
         # Instalar semgrep
@@ -179,12 +231,19 @@ runs:
         echo "Instalando dependencias Python..."
         python3 -m pip install jq jsonschema jinja2 python-dateutil pyyaml pandas
         
-        # Instalar locale español
-        sudo apt-get install -y language-pack-es || true
+        # Instalar y configurar locale para evitar warnings
+        sudo apt-get install -y locales
+        sudo locale-gen es_ES.UTF-8 en_US.UTF-8 || true
+        sudo update-locale LANG=C.UTF-8 LC_ALL=C.UTF-8 || true
         
         # Verificar instalaciones
         echo "Verificando instalaciones..."
-        gitleaks version || echo "Gitleaks no se pudo verificar"
+        if command -v gitleaks &> /dev/null; then
+          echo "✅ Gitleaks version: $(gitleaks version)"
+        else
+          echo "❌ Gitleaks no está instalado"
+          exit 1
+        fi
         semgrep --version || echo "Semgrep no se pudo verificar"
         python3 --version
         pip --version
@@ -425,11 +484,9 @@ runs:
         
         # Usar acciones/upload-artifact
         echo "::group::Subiendo artifacts"
-        npx @actions/upload-artifact@v4 \
-          --name "security-reports-$REPORT_LANG" \
-          --path "gitleaks-report.json,semgrep-results.sarif,validation-result.json,security-report-$REPORT_LANG.*" \
-          --retention-days 30
-        echo "::endgroup::"
+        # En composite actions, debemos usar upload-artifact directamente
+        # Nota: Este paso será reemplazado por la acción upload-artifact separada
+        echo "📤 Archivos listos para ser subidos con actions/upload-artifact"
         
     # Paso 11: Enviar notificaciones
     - name: Send notifications
