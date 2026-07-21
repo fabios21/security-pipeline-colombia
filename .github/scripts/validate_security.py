@@ -56,22 +56,22 @@ class SecurityValidator:
             
             for finding in findings:
                 if isinstance(finding, dict):
-                    # Extraer información completa del hallazgo
+                    # Extraer información completa del hallazgo usando los nombres correctos de gitleaks
                     secret_finding = {
-                        "rule": finding.get("rule", "Unknown"),
-                        "description": finding.get("description", ""),
-                        "file": finding.get("file", "Unknown"),
-                        "line": finding.get("line", 0),
-                        "secret": finding.get("secret", "")[:20] + "..." if finding.get("secret") else "",
-                        "secret_full": finding.get("secret", ""),
-                        "commit": finding.get("commit", ""),
-                        "author": finding.get("author", ""),
-                        "email": finding.get("email", ""),
-                        "date": finding.get("date", ""),
-                        "entropy": finding.get("entropy", 0.0),
+                        "rule": finding.get("RuleID", finding.get("rule", "Unknown")),
+                        "description": finding.get("Description", finding.get("description", "")),
+                        "file": finding.get("File", finding.get("file", "Unknown")),
+                        "line": finding.get("StartLine", finding.get("line", 0)),
+                        "secret": finding.get("Secret", finding.get("secret", ""))[:20] + "..." if finding.get("Secret", finding.get("secret", "")) else "",
+                        "secret_full": finding.get("Secret", finding.get("secret", "")),
+                        "commit": finding.get("Commit", finding.get("commit", "")),
+                        "author": finding.get("Author", finding.get("author", "")),
+                        "email": finding.get("Email", finding.get("email", "")),
+                        "date": finding.get("Date", finding.get("date", "")),
+                        "entropy": finding.get("Entropy", finding.get("entropy", 0.0)),
                         "severity": "high",  # Todos los secretos son de alta severidad
-                        "tags": finding.get("tags", []),
-                        "fingerprint": finding.get("fingerprint", "")
+                        "tags": finding.get("Tags", finding.get("tags", [])),
+                        "fingerprint": finding.get("Fingerprint", finding.get("fingerprint", ""))
                     }
                     self.secret_findings.append(secret_finding)
             

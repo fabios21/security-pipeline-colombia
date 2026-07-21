@@ -961,7 +961,7 @@ runs:
           echo "SHOULD_FAIL=false" >> $GITHUB_ENV
         fi
         
-    # Paso 12: Mostrar resumen final
+    # Paso 12: Mostrar resumen final (CORREGIDO)
     - name: Show final summary
       if: always()
       shell: bash
@@ -970,76 +970,73 @@ runs:
         echo "=============================="
         echo ""
         
-        # Debug: Verificar variables de entorno primero
-        echo "🔍 DEBUG - Variables de entorno:"
-        echo "  FINAL_SECRETS=${FINAL_SECRETS:-'NO_DEFINIDA'}"
-        echo "  FINAL_CRITICAL=${FINAL_CRITICAL:-'NO_DEFINIDA'}"
-        echo "  FINAL_HIGH=${FINAL_HIGH:-'NO_DEFINIDA'}"
-        echo ""
+        # MÉTODO DIRECTO: Leer siempre de archivos (más confiable)
+        FINAL_SECRETS="0"
+        FINAL_VULNS="0"
+        FINAL_CRITICAL="0"
+        FINAL_HIGH="0"
+        FINAL_MEDIUM="0"
+        FINAL_LOW="0"
         
-        # MÉTODO ROBUSTO: Leer directamente de archivos siempre
-        ACTUAL_SECRETS="0"
-        ACTUAL_VULNS="0"
-        ACTUAL_CRITICAL="0"
-        ACTUAL_HIGH="0"
-        
-        echo "🔍 Leyendo datos directamente de archivos..."
-        
+        # Leer secretos usando la MISMA lógica del paso 5
         if [ -f "gitleaks-report.json" ] && [ -s "gitleaks-report.json" ]; then
-          echo "📄 Analizando gitleaks-report.json..."
           
-          # Intentar múltiples métodos como antes
-          METHOD1=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
-          METHOD2=$(jq '. | length' gitleaks-report.json 2>/dev/null || echo "0")  
-          METHOD3=$(grep -o '"RuleID"' gitleaks-report.json | wc -l 2>/dev/null || echo "0")
+          # Usar la misma lógica exacta del paso de detección (método 2 funcionó)
+          SECRET_COUNT_1=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+          SECRET_COUNT_2=$(jq '. | length' gitleaks-report.json 2>/dev/null || echo "0")
+          SECRET_COUNT_3=$(grep -o '"RuleID"' gitleaks-report.json | wc -l 2>/dev/null || echo "0")
           
-          echo "  Método 1: $METHOD1"
-          echo "  Método 2: $METHOD2"
-          echo "  Método 3: $METHOD3"
-          
-          # Usar el más alto
-          ACTUAL_SECRETS="$METHOD1"
-          if [ "$METHOD2" -gt "$ACTUAL_SECRETS" ]; then
-            ACTUAL_SECRETS="$METHOD2"
+          # Usar el mismo criterio del paso 5
+          if [ "$SECRET_COUNT_1" -gt "0" ]; then
+            FINAL_SECRETS="$SECRET_COUNT_1"
+          elif [ "$SECRET_COUNT_2" -gt "0" ]; then
+            FINAL_SECRETS="$SECRET_COUNT_2"  
+          elif [ "$SECRET_COUNT_3" -gt "0" ]; then
+            FINAL_SECRETS="$SECRET_COUNT_3"
+          else
+            FINAL_SECRETS="0"
           fi
-          if [ "$METHOD3" -gt "$ACTUAL_SECRETS" ]; then
-            ACTUAL_SECRETS="$METHOD3"
-          fi
-          
-          echo "  ✅ Secretos finales: $ACTUAL_SECRETS"
-        else
-          echo "❌ gitleaks-report.json no existe o está vacío"
         fi
         
+        # Leer vulnerabilidades usando la MISMA lógica del paso 6
         if [ -f "semgrep-results.sarif" ] && [ -s "semgrep-results.sarif" ]; then
-          echo "📄 Analizando semgrep-results.sarif..."
           
-          ACTUAL_VULNS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          ACTUAL_CRITICAL=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          ACTUAL_HIGH=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          # Contar por severidad igual que en paso 6
+          FINAL_CRITICAL=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          FINAL_HIGH=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          FINAL_MEDIUM=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          FINAL_LOW=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
           
-          echo "  Vulnerabilidades totales: $ACTUAL_VULNS"
-          echo "  Críticas: $ACTUAL_CRITICAL"
-          echo "  Altas: $ACTUAL_HIGH"
-        else
-          echo "❌ semgrep-results.sarif no existe o está vacío"
+          # Total de resultados
+          TOTAL_RESULTS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          CALCULATED_TOTAL=$((FINAL_CRITICAL + FINAL_HIGH + FINAL_MEDIUM + FINAL_LOW))
+          
+          # Usar el mayor entre calculado y total (más conservador como en paso 6)
+          if [ "$TOTAL_RESULTS" -gt "$CALCULATED_TOTAL" ]; then
+            FINAL_VULNS="$TOTAL_RESULTS"
+          else
+            FINAL_VULNS="$CALCULATED_TOTAL"
+          fi
         fi
         
-        echo ""
-        echo "📊 DATOS FINALES (leídos directamente):"
+        # MOSTRAR DATOS CONSISTENTES CON EL RESTO DEL PIPELINE
+        echo "🔑 Secretos detectados: $FINAL_SECRETS"
+        echo "⚠️  Vulnerabilidades totales: $FINAL_VULNS"
+        echo "🔴 Vulnerabilidades críticas: $FINAL_CRITICAL"
+        echo "🟠 Vulnerabilidades altas: $FINAL_HIGH"
         
-        # Mostrar datos CORRECTOS leídos directamente
-        echo "🔑 Secretos detectados: $ACTUAL_SECRETS"
-        echo "⚠️  Vulnerabilidades totales: $ACTUAL_VULNS"
-        echo "🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
-        echo "🟠 Vulnerabilidades altas: $ACTUAL_HIGH"
+        if [ "$FINAL_MEDIUM" -gt "0" ] || [ "$FINAL_LOW" -gt "0" ]; then
+          echo "🟡 Vulnerabilidades medias: $FINAL_MEDIUM"
+          echo "🟢 Vulnerabilidades bajas: $FINAL_LOW"
+        fi
         
+        # Estados de validación
         if [ -n "${{ steps.validation.outputs.status }}" ]; then
           echo "🔒 Estado validación: ${{ steps.validation.outputs.status }}"
         fi
         
         if [ -n "${{ steps.compliance-check.outputs.compliance_status }}" ]; then
-          echo "🔒 Cumplimiento de seguridad: ${{ steps.compliance-check.outputs.compliance_status }}"
+          echo "🔒 Estado cumplimiento: ${{ steps.compliance-check.outputs.compliance_status }}"
         fi
         
         echo ""
@@ -1051,6 +1048,19 @@ runs:
         echo "  • security-report-*.html/md → Reportes formateados"
         echo ""
         echo "📍 Los reportes están disponibles para descarga como artifacts"
+        
+        # Verificación de consistencia
+        if [ "$FINAL_SECRETS" -gt "0" ] && [ "${{ steps.validation.outputs.status }}" = "failed" ]; then
+          echo ""
+          echo "✅ CONSISTENCIA VERIFICADA: Detección y resumen coinciden"
+          echo "   🔴 $FINAL_SECRETS secretos detectados y reportados correctamente"
+        elif [ "$FINAL_SECRETS" = "0" ] && [ "${{ steps.validation.outputs.status }}" = "passed" ]; then
+          echo ""
+          echo "✅ CONSISTENCIA VERIFICADA: Sin problemas detectados"
+        else
+          echo ""
+          echo "⚠️ VERIFICAR CONSISTENCIA: Estado=${{ steps.validation.outputs.status }}, Secretos=$FINAL_SECRETS"
+        fi
         
     # Paso 13: Completar ejecución y aplicar bloqueo si es necesario
     - name: Complete execution
