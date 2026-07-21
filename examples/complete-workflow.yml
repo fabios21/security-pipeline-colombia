@@ -50,5 +50,11 @@ jobs:
       with:
         name: security-reports
         path: |
-          security-artifacts/
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          visual-report.txt
+          security-report-*.html
+          security-report-*.md
+          security-report-*.json
         retention-days: 30

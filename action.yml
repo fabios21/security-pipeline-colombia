@@ -571,12 +571,15 @@ runs:
       if: always()
       shell: bash
       run: |
-        echo "📤 Subiendo artifacts de seguridad..."
+        echo "📤 Preparando artifacts de seguridad..."
         REPORT_LANG="${{ env.REPORT_LANG }}"
         
-        # Listar archivos que se van a subir
+        # Listar archivos que se van a incluir en artifacts
         echo "📄 Archivos generados:"
-        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null || true
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
+        
+        # NO crear directorio security-artifacts, dejar archivos en raíz
+        # El workflow principal debe subir estos archivos directamente
         
         echo "::group::📊 Contenido del reporte visual:"
         if [ -f "visual-report.txt" ]; then
@@ -586,18 +589,16 @@ runs:
         fi
         echo "::endgroup::"
         
-        # Crear directorio para artifacts si no existe
-        mkdir -p security-artifacts
+        # Crear un resumen de archivos disponibles para el workflow principal
+        echo "FILES_FOR_UPLOAD=$(ls gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null | tr '\n' ' ' || echo '')" >> $GITHUB_ENV
         
-        # Copiar todos los reportes al directorio de artifacts
-        cp -f gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* security-artifacts/ 2>/dev/null || true
-        
-        echo "📁 Archivos listos en directorio: security-artifacts/"
-        ls -la security-artifacts/ 2>/dev/null || echo "⚠️ No hay archivos para subir"
-        
-        # Nota: En un workflow real, aquí se usaría actions/upload-artifact
-        # pero en una composite action, el workflow que la use debe manejar el upload
-        echo "✅ Artifacts preparados para ser subidos por el workflow principal"
+        echo "✅ Archivos preparados para ser subidos por el workflow principal"
+        echo "   El workflow principal debe usar upload-artifact con estos archivos:"
+        echo "   - gitleaks-report.json"
+        echo "   - semgrep-results.sarif" 
+        echo "   - validation-result.json"
+        echo "   - visual-report.txt"
+        echo "   - security-report-$REPORT_LANG.*"
         
     # Paso 11: Mostrar resumen final
     - name: Show final summary
