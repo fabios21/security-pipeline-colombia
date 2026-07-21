@@ -408,8 +408,10 @@ proporcionando análisis de credenciales expuestas y reportes comprensibles.
             print(f"   • 🟠 {critical_high_count} vulnerabilidades críticas/altas")
         
         print(f"\n📞 CONTACTOS URGENTES:")
-        print(f"   • 👨‍💼 Responsable de seguridad: seguridad@empresa.co")
-        print(f"   • 🔧 Equipo de desarrollo: desarrollo@empresa.co")
+        print(f"   • 👨‍💼 Responsable de seguridad: Revisar configuración del repositorio")
+        print(f"   • 🔧 Equipo de desarrollo: Contactar maintainers en GitHub")
+        print(f"   • 📋 Issues: https://github.com/${{{{ github.repository }}}}/issues")
+        print(f"   • 📞 Emergencias: Seguir protocolo de seguridad de la organización")
         
         sys.exit(1)
         

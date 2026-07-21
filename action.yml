@@ -84,6 +84,16 @@ inputs:
     description: 'Lista de emails para notificaciones (separados por coma)'
     required: false
     default: ''
+    
+  security-contact:
+    description: 'Email del responsable de seguridad'
+    required: false
+    default: ''
+    
+  dev-team-contact:
+    description: 'Email del equipo de desarrollo'
+    required: false
+    default: ''
 
 outputs:
   validation-status:
@@ -939,8 +949,9 @@ runs:
           echo "  3. 🔄 Volver a ejecutar el análisis"
           echo ""
           echo "📞 Contactos de emergencia:"
-          echo "  • Seguridad: seguridad@empresa.co"
-          echo "  • DevOps: devops@empresa.co"
+          echo "  • Seguridad: Revisar configuración del repositorio"
+          echo "  • DevOps: Contactar maintainers en GitHub Issues"
+          echo "  • Emergencias: Seguir protocolo de seguridad de la organización"
           echo ""
           # NO hacer exit 1 aquí - dejar que el resumen se ejecute primero
           echo "SHOULD_FAIL=true" >> $GITHUB_ENV

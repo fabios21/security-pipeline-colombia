@@ -43,6 +43,10 @@ jobs:
         block-on-high: true
         require-approval-on-medium: true
         report-formats: 'html,markdown,json'
+        # 📞 CONFIGURAR CONTACTOS DE TU ORGANIZACIÓN (Opcional)
+        security-contact: 'security@tu-empresa.com'
+        dev-team-contact: 'devops@tu-empresa.com'
+        email-notifications: 'security@tu-empresa.com,devops@tu-empresa.com'
         
     - name: Upload security reports
       if: always()

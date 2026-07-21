@@ -538,8 +538,8 @@ class SecurityReportGenerator:
     
     <div class="footer">
         <p>Este reporte fue generado automáticamente por el Security Pipeline Colombia</p>
-        <p>Para preguntas técnicas: equipo.seguridad@empresa.co</p>
-        <p>Para asuntos legales: legal.compliance@empresa.co</p>
+        <p>Para preguntas técnicas: Contactar maintainers del repositorio</p>
+        <p>Para asuntos legales: Revisar documentación de la organización</p>
         <p>© {current_year} - Todos los derechos reservados</p>
     </div>
 </body>
@@ -706,8 +706,8 @@ class SecurityReportGenerator:
 
 *Este reporte fue generado automáticamente por el Security Pipeline Colombia*
 
-**Para preguntas técnicas:** equipo.seguridad@empresa.co  
-**Para asuntos legales:** legal.compliance@empresa.co  
+**Para preguntas técnicas:** Contactar maintainers del repositorio  
+**Para asuntos legales:** Revisar documentación de la organización  
 
 © {datetime.now().year} - Todos los derechos reservados
 """

@@ -73,6 +73,25 @@ README.md                     # Esta documentación
 
 ## ⚙️ Configuración
 
+### Configuración de Contactos (Opcional)
+Para personalizar los contactos que aparecen en los reportes de seguridad:
+
+```yaml
+- name: Security Pipeline Colombia
+  uses: fabios21/security-pipeline-colombia@main
+  with:
+    # Contactos personalizados (opcional)
+    security-contact: 'security@tu-empresa.com'
+    dev-team-contact: 'devops@tu-empresa.com'
+    email-notifications: 'security@tu-empresa.com,lead@tu-empresa.com'
+    
+    # Otras configuraciones
+    compliance-level: 'standard'
+    block-on-secrets: true
+```
+
+Si no configuras contactos específicos, se usarán valores genéricos que referencian la configuración del repositorio.
+
 ### Archivo `.gitleaks.toml`
 Configuración personalizada para contexto colombiano:
 - Detección de API keys de servicios bancarios (PSE, ACH)
@@ -282,9 +301,9 @@ Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE
 ## 📞 Soporte y Contacto
 
 ### Canales de Soporte
-- **Issues de GitHub:** Para reportar bugs o solicitar features
-- **Discusiones:** Para preguntas y mejores prácticas
-- **Email:** seguridad@empresa.co (configurar según organización)
+- **Email:** Configurar en el workflow (ver sección de configuración)
+- **GitHub Issues:** Para reportar bugs o solicitar features  
+- **GitHub Discussions:** Para preguntas y mejores prácticas
 
 ### Mantenimiento
 - **Actualizaciones de seguridad:** Mensuales
