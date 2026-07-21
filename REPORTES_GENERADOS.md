@@ -157,18 +157,18 @@ open security-report-es_CO.html
 - `validation-result.json` → Marca el estado como "failed"
 - Todos los reportes mostrarán alertas críticas
 
-## 🏛️ Sección especial: Cumplimiento Ley 1581
+## 🚨 Sección especial: Alertas de seguridad crítica
 
-Cuando se detectan fugas de datos personales:
+Cuando se detectan credenciales sensibles expuestas:
 
 ```
-🏛️  ALERTA LEGAL - LEY 1581
+🚨 ALERTA DE SEGURIDAD - RIESGO CRÍTICO
 ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
 
-🔴 FUGAS DE DATOS DETECTADAS
-   ├─ 📞 Contactar área legal inmediatamente
-   ├─ 📄 Documentar incidente según protocolo
-   └─ ⏰ Notificar SIC en 72 horas hábiles
+🔴 CREDENCIALES SENSIBLES EXPUESTAS
+   ├─ 📞 Contactar equipo de seguridad inmediatamente
+   ├─ 📄 Documentar incidente según protocolo de seguridad
+   └─ ⏰ Revisar e implementar controles de seguridad
 ```
 
 ## 🔧 Configuración para diferentes escenarios
@@ -241,7 +241,7 @@ jq '.vulnerability_findings[] | select(.severity == "critical")' validation-resu
 ### **Paso 3: Tomar acción**
 1. **Secretos expuestos**: Eliminar inmediatamente del código
 2. **Vulnerabilidades críticas**: Corregir en máximo 7 días
-3. **Cumplimiento Ley 1581**: Notificar al área legal
+3. **Revisión de seguridad**: Consultar con equipo de seguridad
 
 ### **Paso 4: Documentar la resolución**
 ```bash

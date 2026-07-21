@@ -1,5 +1,5 @@
 name: 'Security Pipeline Colombia'
-description: '🔒 Pipeline de seguridad automatizado para GitHub Actions con cumplimiento Ley 1581 de protección de datos en Colombia'
+description: '🔒 Pipeline de seguridad automatizado para GitHub Actions con enfoque en mejores prácticas de seguridad'
 author: 'Security Pipeline Colombia Team'
 
 branding:
@@ -18,13 +18,13 @@ inputs:
     default: 'p/owasp-top-ten'
     
   compliance-level:
-    description: 'Nivel de cumplimiento normativo colombiano'
+    description: 'Nivel de cumplimiento de seguridad'
     required: false
-    default: 'ley_1581'
+    default: 'standard'
     options:
-      - 'ley_1581'
-      - 'sic_circular_002_2021'
-      - 'both'
+      - 'standard'
+      - 'enhanced'
+      - 'strict'
       - 'custom'
       
   timezone:
@@ -106,7 +106,7 @@ outputs:
     value: ${{ steps.generate-report.outputs.report_url }}
     
   compliance-status:
-    description: 'Estado de cumplimiento de Ley 1581'
+    description: 'Estado de cumplimiento de seguridad'
     value: ${{ steps.compliance-check.outputs.compliance_status }}
 
 runs:
@@ -130,7 +130,7 @@ runs:
       run: |
         echo "🔒 Security Pipeline Colombia - Iniciando"
         echo "📝 Configuración: ${{ inputs.config-path }}"
-        echo "🏛️ Cumplimiento: ${{ inputs.compliance-level }}"
+        echo "🔒 Nivel de seguridad: ${{ inputs.compliance-level }}"
         echo "🌐 Zona horaria: ${{ inputs.timezone }}"
         echo "📄 Idioma reportes: ${{ inputs.report-language }}"
         
@@ -500,22 +500,22 @@ runs:
           # No salimos con error, solo marcamos que requiere aprobación
         fi
         
-    # Paso 8: Verificar cumplimiento Ley 1581
-    - name: Check compliance with Ley 1581
+    # Paso 8: Verificar cumplimiento de seguridad
+    - name: Check security compliance
       id: compliance-check
       shell: bash
       run: |
-        echo "🏛️ Verificando cumplimiento Ley 1581..."
+        echo "🔒 Verificando cumplimiento de seguridad..."
         
         # Ejecutar verificación de cumplimiento
         COMPLIANCE_STATUS="compliant"
         
         if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ]; then
           COMPLIANCE_STATUS="non_compliant"
-          echo "⚠️ Incumplimiento detectado: Fuga de datos personales según Ley 1581"
-        elif [ "${{ inputs.compliance-level }}" = "ley_1581" ] || [ "${{ inputs.compliance-level }}" = "both" ]; then
-          # Verificaciones adicionales específicas de Ley 1581
-          echo "🔍 Verificando controles específicos Ley 1581..."
+          echo "⚠️ Incumplimiento detectado: Credenciales sensibles expuestas"
+        elif [ "${{ inputs.compliance-level }}" = "standard" ] || [ "${{ inputs.compliance-level }}" = "strict" ]; then
+          # Verificaciones adicionales específicas de seguridad
+          echo "🔍 Verificando controles específicos de seguridad..."
           COMPLIANCE_STATUS="compliant"
         fi
         
@@ -646,7 +646,7 @@ runs:
         fi
         
         if [ -n "${{ steps.compliance-check.outputs.compliance_status }}" ]; then
-          echo "🏛️  Cumplimiento Ley 1581: ${{ steps.compliance-check.outputs.compliance_status }}"
+          echo "🔒 Cumplimiento de seguridad: ${{ steps.compliance-check.outputs.compliance_status }}"
         fi
         
         echo ""

@@ -34,7 +34,7 @@ jobs:
     - name: Run Security Pipeline Colombia
       uses: tu-usuario/security-pipeline-colombia@v1.0.0
       with:
-        compliance-level: 'ley_1581'
+        compliance-level: 'standard'
         timezone: ${{ env.TIMEZONE }}
         report-language: 'es_CO'
         block-on-secrets: true
@@ -49,6 +49,5 @@ jobs:
       with:
         name: security-reports
         path: |
-          security-report-es.html
-          security-report-es.md
+          security-artifacts/
         retention-days: 30

@@ -59,7 +59,7 @@ jobs:
       with:
         config-path: ${{ env.CUSTOM_CONFIG }}
         semgrep-config: 'p/owasp-top-ten,p/security-audit'
-        compliance-level: 'both'  # Ley 1581 + SIC
+        compliance-level: 'strict'  # Nivel estricto de seguridad
         timezone: 'America/Bogota'
         report-language: 'es_CO'
         report-formats: 'html,markdown,json'
@@ -95,10 +95,7 @@ jobs:
       with:
         name: security-analysis-${{ github.run_number }}
         path: |
-          gitleaks-report.json
-          semgrep-results.sarif
-          validation-result.json
-          security-report-es.*
+          security-artifacts/
         retention-days: 90
         
     - name: Create security dashboard entry

@@ -105,15 +105,15 @@ class VisualSecurityReport:
                     bar = "█" * bar_length
                     output.append(f"{icon} {name}: {bar} ({count})")
             
-            # 🏛️ CUMPLIMIENTO LEGAL
+            # ⚠️ ALERTA DE SEGURIDAD
             compliance = data.get("compliance", {}).get("ley_1581", {})
             if compliance.get("data_leakage_detected", False):
-                output.append("\n" + "🏛️  ALERTA LEGAL - LEY 1581".center(80))
+                output.append("\n" + "🚨 ALERTA DE SEGURIDAD - RIESGO CRÍTICO".center(80))
                 output.append("⚠️" * 40)
-                output.append("\n🔴 FUGAS DE DATOS DETECTADAS")
-                output.append("   ├─ 📞 Contactar área legal inmediatamente")
-                output.append("   ├─ 📄 Documentar incidente según protocolo")
-                output.append("   └─ ⏰ Notificar SIC en 72 horas hábiles")
+                output.append("\n🔴 CREDENCIALES SENSIBLES EXPUESTAS")
+                output.append("   ├─ 📞 Contactar equipo de seguridad inmediatamente")
+                output.append("   ├─ 📄 Documentar incidente según protocolo de seguridad")
+                output.append("   └─ ⏰ Revisar e implementar controles de seguridad")
             
             # 💡 RECOMENDACIONES
             if secrets or summary.get("critical_vulnerabilities", 0) > 0:

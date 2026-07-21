@@ -5,7 +5,7 @@ Script de validación de seguridad para GitHub Actions - Colombia
 Analiza resultados de gitleaks y semgrep para determinar si un merge
 puede proceder basado en la severidad de las vulnerabilidades detectadas.
 
-Cumplimiento Ley 1581: Detecta fugas de datos personales y proporciona
+Evaluación de seguridad: Detecta credenciales sensibles expuestas y proporciona
 reportes comprensibles para stakeholders no técnicos.
 """
 
@@ -77,12 +77,12 @@ class SecurityValidator:
             
             self.validation_result["summary"]["total_secrets"] = len(self.secret_findings)
             
-            # Análisis de cumplimiento Ley 1581
+            # Análisis de riesgos de datos
             if self.secret_findings:
                 self.validation_result["compliance"]["ley_1581"]["data_leakage_detected"] = True
-                self.validation_result["compliance"]["ley_1581"]["requires_notification"] = True
+                self.validation_result["compliance"]["ley_1581"]["requires_notification"] = False
                 self.validation_result["compliance"]["ley_1581"]["recommendations"].append(
-                    "Se detectaron fugas de datos personales. Notificar al área legal según Ley 1581."
+                    "Se detectaron credenciales sensibles expuestas. Revisar e implementar controles de seguridad adecuados."
                 )
             
             # Análisis adicional por tipo de secreto
@@ -221,10 +221,10 @@ class SecurityValidator:
         self.validation_result["secret_findings"] = self.secret_findings
         self.validation_result["vulnerability_findings"] = self.vulnerability_findings
         
-        # Agregar recomendaciones basadas en el contexto colombiano
+        # Agregar recomendaciones basadas en el contexto de seguridad
         if self.validation_result["status"] == "failed":
             self.validation_result["compliance"]["ley_1581"]["recommendations"].append(
-                "Revisión legal requerida antes de proceder con cambios que afecten datos personales."
+                "Revisión de seguridad requerida antes de proceder con cambios que afecten credenciales sensibles."
             )
         
         return self.validation_result
@@ -238,8 +238,8 @@ def main():
 Ejemplos:
   %(prog)s --secrets gitleaks-report.json --sast semgrep-results.sarif
   
-Este script ayuda al cumplimiento de la Ley 1581 de Protección de Datos
-proporcionando análisis de fugas de datos y reportes comprensibles.
+Este script ayuda en la evaluación de riesgos de seguridad de la información
+proporcionando análisis de credenciales expuestas y reportes comprensibles.
         """
     )
     
@@ -350,24 +350,24 @@ proporcionando análisis de fugas de datos y reportes comprensibles.
                 print(f"     📝 {vuln['description'][:60]}...")
                 print(f"     ⚠️  {vuln['severity'].upper()}")
     
-    # 📋 SECCIÓN 2: CUMPLIMIENTO NORMATIVO
-    print(f"\n🏛️  CUMPLIMIENTO NORMATIVO - LEY 1581")
+    # 📋 SECCIÓN 2: ANÁLISIS DE RIESGOS
+    print(f"\n📊 ANÁLISIS DE RIESGOS DE SEGURIDAD")
     print("═" * 40)
     
     compliance = result["compliance"]["ley_1581"]
     
     if compliance["data_leakage_detected"]:
-        print(f"\n🔴 FUGAS DE DATOS DETECTADAS: SÍ")
-        print("   └─ 🚨 NOTIFICACIÓN LEGAL REQUERIDA")
-        print("   └─ ⏰ PLAZO: 72 horas hábiles según SIC")
+        print(f"\n🔴 RIESGO ALTO: FUGAS DE DATOS DETECTADAS")
+        print("   └─ ⚠️  Se requiere revisión inmediata")
+        print("   └─ 🔒 Implementar controles de seguridad mejorados")
     else:
-        print(f"\n🟢 FUGAS DE DATOS DETECTADAS: NO")
-        print("   └─ ✅ Cumple con principios de seguridad Ley 1581")
+        print(f"\n🟢 RIESGO BAJO: No se detectaron fugas de datos")
+        print("   └─ ✅ Nivel de seguridad apropiado")
     
     if compliance["requires_notification"]:
-        print(f"\n📧 NOTIFICACIÓN REQUERIDA: SÍ")
-        print("   └─ 📋 Titulares de datos afectados")
-        print("   └─ 🏛️  Superintendencia de Industria y Comercio (SIC)")
+        print(f"\n📋 HALLazGOS CRÍTICOS:")
+        print("   └─ ⚠️  Se detectaron problemas de seguridad")
+        print("   └─ 🔧 Se requiere corrección inmediata")
     
     # 💡 SECCIÓN 3: RECOMENDACIONES VISUALES
     if compliance["recommendations"] or summary['total_secrets'] > 0 or summary['critical_vulnerabilities'] > 0:
@@ -387,10 +387,10 @@ proporcionando análisis de fugas de datos y reportes comprensibles.
             print("   3. 📊 Actualizar matriz de riesgos")
         
         if compliance["data_leakage_detected"]:
-            print(f"\n🏛️  ACCIONES LEGALES:")
-            print("   1. 📞 Contactar área legal inmediatamente")
-            print("   2. 📄 Documentar incidente según protocolo interno")
-            print("   3. 🕒 Cumplir plazos de notificación Ley 1581")
+            print(f"\n🚨 ACCIONES DE SEGURIDAD REQUERIDAS:")
+            print("   1. 📞 Contactar equipo de seguridad inmediatamente")
+            print("   2. 📄 Documentar incidente según protocolo de seguridad")
+            print("   3. 🕒 Revisar e implementar controles de seguridad")
     
     # 🎯 SECCIÓN 4: DECISIÓN FINAL CON ÉNFASIS VISUAL
     print(f"\n" + "="*80)
@@ -409,7 +409,7 @@ proporcionando análisis de fugas de datos y reportes comprensibles.
         
         print(f"\n📞 CONTACTOS URGENTES:")
         print(f"   • 👨‍💼 Responsable de seguridad: seguridad@empresa.co")
-        print(f"   • ⚖️  Área legal: legal@empresa.co")
+        print(f"   • 🔧 Equipo de desarrollo: desarrollo@empresa.co")
         
         sys.exit(1)
         
@@ -431,7 +431,7 @@ proporcionando análisis de fugas de datos y reportes comprensibles.
         print(f"\n📊 RESUMEN POSITIVO:")
         print(f"   • 🔒 0 secretos expuestos")
         print(f"   • 🛡️  0 vulnerabilidades críticas/altas")
-        print(f"   • 📋 Cumple con Ley 1581")
+        print(f"   • 📋 Nivel de seguridad apropiado")
         print(f"\n🚀 ACCIÓN: MERGE PERMITIDO")
         
         sys.exit(0)

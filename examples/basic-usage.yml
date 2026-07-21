@@ -21,7 +21,7 @@ jobs:
       id: security
       uses: fabios21/security-pipeline-colombia@v1.0.7
       with:
-        compliance-level: 'ley_1581'
+        compliance-level: 'standard'
         timezone: 'America/Bogota'
         report-language: 'es_CO'
         block-on-secrets: true
@@ -36,11 +36,7 @@ jobs:
       with:
         name: security-reports-complete
         path: |
-          gitleaks-report.json
-          semgrep-results.sarif
-          validation-result.json
-          visual-report.txt
-          security-report-es_CO.*
+          security-artifacts/
         retention-days: 30
         
     - name: Show results summary
@@ -48,7 +44,10 @@ jobs:
         echo "🎯 ANÁLISIS DE SEGURIDAD COMPLETADO"
         echo "===================================="
         echo ""
-        echo "📊 Hallazgos disponibles en:"
+        echo "📊 Hallazgos disponibles en el artifact 'security-reports-complete':"
+        echo ""
+        echo "   El artifact contiene todos los reportes en el directorio security-artifacts/"
+        echo "   incluyendo:"
         echo "   • 📁 gitleaks-report.json → Secretos detectados"
         echo "   • 📁 semgrep-results.sarif → Vulnerabilidades SAST"
         echo "   • 📁 validation-result.json → Resultado validación"
@@ -60,6 +59,7 @@ jobs:
         echo "   1. Ve a 'Actions' en este repositorio"
         echo "   2. Encuentra esta ejecución"
         echo "   3. Descarga 'security-reports-complete'"
+        echo "   4. Descomprime para ver todos los reportes"
         echo ""
         echo "⚠️  Nota: Si hay secretos o vulnerabilidades críticas,"
         echo "     el merge será bloqueado automáticamente."

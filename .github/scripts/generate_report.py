@@ -3,8 +3,8 @@
 Generador de reportes de seguridad para stakeholders no técnicos
 
 Este script procesa resultados de análisis de seguridad y genera reportes
-comprensibles, incluyendo secciones específicas sobre cumplimiento
-de la Ley 1581 de Protección de Datos de Colombia.
+comprensibles, con enfoque en mejores prácticas de seguridad de la información
+y evaluación de riesgos.
 """
 
 import json
@@ -138,45 +138,45 @@ class SecurityReportGenerator:
                 "status": "pending_review"
             },
             "sic": {
-                "title": "Consideraciones para la Superintendencia de Industria y Comercio (SIC)",
+                "title": "Consideraciones para la implementación de mejores prácticas",
                 "recommendations": []
             }
         }
         
-        # Análisis Ley 1581
+        # Análisis de riesgos de datos
         ley_1581 = compliance["ley_1581"]
         
         if self.validation_result["compliance"]["ley_1581"]["data_leakage_detected"]:
             ley_1581["findings"].append(
-                "Se detectó posible fuga de datos personales, lo que constituye "
-                "una violación a los principios de seguridad y confidencialidad "
-                "establecidos en la Ley 1581."
+                "Se detectó posible exposición de credenciales sensibles, lo que constituye "
+                "un riesgo significativo para la seguridad de la información y "
+                "requiere medidas de mitigación inmediatas."
             )
             ley_1581["obligations"].append(
-                "Notificar al área legal para evaluación de posibles "
-                "notificaciones a la SIC y titulares de datos afectados."
+                "Revisar el equipo de seguridad para evaluación de riesgos y "
+                "implementación de controles adecuados."
             )
             ley_1581["status"] = "requires_action"
         else:
             ley_1581["findings"].append(
-                "No se detectaron fugas evidentes de datos personales en el análisis."
+                "No se detectaron exposiciones evidentes de credenciales sensibles en el análisis."
             )
             ley_1581["status"] = "compliant"
         
-        # Obligaciones generales Ley 1581
+        # Buenas prácticas generales de seguridad
         ley_1581["obligations"].extend([
-            "Mantener inventario actualizado de datos personales tratados",
-            "Implementar medidas técnicas y organizativas apropiadas",
-            "Designar responsable del tratamiento de datos personales",
+            "Mantener inventario actualizado de credenciales y claves de acceso",
+            "Implementar medidas técnicas y organizativas apropiadas de seguridad",
+            "Designar responsable de la gestión de seguridad de la información",
             "Establecer procedimientos para ejercicio de derechos ARCO"
         ])
         
-        # Recomendaciones SIC
+        # Recomendaciones de buenas prácticas
         compliance["sic"]["recommendations"] = [
             "Documentar los controles de seguridad implementados",
             "Mantener registros de evaluaciones de seguridad periódicas",
             "Establecer procedimientos para gestión de incidentes de seguridad",
-            "Capacitar al personal en protección de datos personales"
+            "Capacitar al personal en mejores prácticas de seguridad"
         ]
         
         return compliance
@@ -210,7 +210,7 @@ class SecurityReportGenerator:
             "cumplimiento de normativa colombiana vigente",
             
             "Documentar procedimientos para respuesta a incidentes de seguridad, "
-            "considerando plazos de notificación establecidos por la SIC"
+            "considerando mejores prácticas de la industria"
         ])
         
         return recommendations
@@ -509,8 +509,8 @@ class SecurityReportGenerator:
     </div>
     
     <div class="section compliance-section">
-        <h2>🏛️ Cumplimiento Normativo - Ley 1581</h2>
-        <h3>Análisis de Cumplimiento</h3>
+        <h2>🏛️ Análisis de Seguridad - Buenas Prácticas</h2>
+        <h3>Evaluación de Riesgos</h3>
         <ul>
             {ley_1581_findings_html}
         </ul>
@@ -522,7 +522,7 @@ class SecurityReportGenerator:
         
         <h3>Estado de Cumplimiento: <strong>{ley_1581_status}</strong></h3>
         
-        <h3>Recomendaciones para la SIC</h3>
+        <h3>Recomendaciones de Mejores Prácticas</h3>
         <ul>
             {sic_recommendations_html}
         </ul>
@@ -674,9 +674,9 @@ class SecurityReportGenerator:
 """
         
         md += f"""
-## 🏛️ Cumplimiento Normativo - Ley 1581
+## 🏛️ Análisis de Seguridad - Buenas Prácticas
 
-### Análisis de Cumplimiento
+### Evaluación de Riesgos
 """
         
         for finding in compliance["ley_1581"]["findings"]:
@@ -688,7 +688,7 @@ class SecurityReportGenerator:
         
         md += f"\n### Estado de Cumplimiento: **{compliance['ley_1581']['status'].upper()}**\n"
         
-        md += f"\n### Recomendaciones para la SIC\n"
+        md += f"\n### Recomendaciones de Mejores Prácticas\n"
         for recommendation in compliance["sic"]["recommendations"]:
             md += f"- {recommendation}\n"
         

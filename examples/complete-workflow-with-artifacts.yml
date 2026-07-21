@@ -22,7 +22,7 @@ jobs:
         with:
           config-path: '.gitleaks.toml'  # Configuración personalizada (opcional)
           semgrep-config: 'p/owasp-top-ten'  # Reglas de Semgrep
-          compliance-level: 'ley_1581'  # Cumplimiento Ley 1581
+          compliance-level: 'standard'  # Nivel estándar de seguridad
           timezone: 'America/Bogota'  # Zona horaria Colombia
           report-language: 'es_CO'  # Español colombiano
           report-formats: 'html,markdown,json'  # Formatos de reporte
@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
-          path: ./security-artifacts
+          path: security-artifacts/
           retention-days: 30  # Guardar por 30 días
           
       - name: Show report summary
@@ -75,7 +75,7 @@ jobs:
           echo "⚠️  Vulnerabilidades totales: ${{ needs.security-analysis.outputs.vulnerability-count }}"
           echo "🔴 Críticas: ${{ needs.security-analysis.outputs.critical-count }}"
           echo "🟠 Altas: ${{ needs.security-analysis.outputs.high-count }}"
-          echo "🏛️  Cumplimiento Ley 1581: ${{ needs.security-analysis.outputs.compliance-status }}"
+          echo "🔒 Cumplimiento de seguridad: ${{ needs.security-analysis.outputs.compliance-status }}"
           echo ""
           echo "📄 Reportes disponibles en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
@@ -119,7 +119,7 @@ jobs:
             - ⚠️  **Vulnerabilidades totales:** ${vulnCount}
             - 🔴 **Críticas:** ${criticalCount}
             - 🟠 **Altas:** ${highCount}
-            - 🏛️  **Cumplimiento Ley 1581:** ${complianceStatus}
+            - 🔒 **Cumplimiento de seguridad:** ${complianceStatus}
             
             📄 **Reportes disponibles:**
             Los reportes completos están disponibles en la ejecución de GitHub Actions.
