@@ -32,7 +32,8 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Run Security Pipeline Colombia
-      uses: tu-usuario/security-pipeline-colombia@v1.0.0
+      id: security
+      uses: fabios21/security-pipeline-colombia@main
       with:
         compliance-level: 'standard'
         timezone: ${{ env.TIMEZONE }}
@@ -41,7 +42,7 @@ jobs:
         block-on-critical: true
         block-on-high: true
         require-approval-on-medium: true
-        report-formats: 'html,markdown'
+        report-formats: 'html,markdown,json'
         
     - name: Upload security reports
       if: always()

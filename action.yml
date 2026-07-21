@@ -478,22 +478,6 @@ runs:
           echo "Error generando resultado de validación"
         fi
         
-        # Verificar reglas de bloqueo
-        if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ] && [ "${{ inputs.block-on-secrets }}" = "true" ]; then
-          echo "❌ Merge bloqueado: Se detectaron secretos expuestos"
-          exit 1
-        fi
-        
-        if [ "${{ steps.sast-scan.outputs.critical_count }}" -gt 0 ] && [ "${{ inputs.block-on-critical }}" = "true" ]; then
-          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades críticas"
-          exit 1
-        fi
-        
-        if [ "${{ steps.sast-scan.outputs.high_count }}" -gt 0 ] && [ "${{ inputs.block-on-high }}" = "true" ]; then
-          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades altas"
-          exit 1
-        fi
-        
         # Verificar si requiere aprobación
         if [ "${{ steps.sast-scan.outputs.medium_count }}" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" = "true" ]; then
           echo "⚠️ Aprobación requerida: Se detectaron vulnerabilidades medias"
@@ -672,10 +656,24 @@ runs:
         echo "  2. Corregir secretos expuestos y vulnerabilidades críticas"
         echo "  3. Descargar artifacts para documentación"
         echo ""
-        echo "⚠️  Nota: Si se detectaron secretos o vulnerabilidades críticas,"
-        echo "     el merge puede estar bloqueado según la configuración."
-        echo ""
         
+        # Verificar reglas de bloqueo (SOLO DESPUÉS de generar todos los reportes)
+        if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ] && [ "${{ inputs.block-on-secrets }}" = "true" ]; then
+          echo "❌ Merge bloqueado: Se detectaron secretos expuestos"
+          exit 1
+        fi
+        
+        if [ "${{ steps.sast-scan.outputs.critical_count }}" -gt 0 ] && [ "${{ inputs.block-on-critical }}" = "true" ]; then
+          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades críticas"
+          exit 1
+        fi
+        
+        if [ "${{ steps.sast-scan.outputs.high_count }}" -gt 0 ] && [ "${{ inputs.block-on-high }}" = "true" ]; then
+          echo "❌ Merge bloqueado: Se detectaron vulnerabilidades altas"
+          exit 1
+        fi
+        
+        # Evaluar estado final
         if [ "${{ steps.validation.outputs.status }}" = "passed" ]; then
           echo "✅ ANÁLISIS EXITOSO - No se detectaron problemas críticos"
         elif [ "${{ steps.validation.outputs.status }}" = "requires_approval" ]; then
