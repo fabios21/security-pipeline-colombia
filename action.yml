@@ -7,6 +7,11 @@ branding:
   color: 'green'
 
 inputs:
+  scan-mode:
+    description: 'Modo de escaneo de secretos: full-history, pr-only, commit-only'
+    required: false
+    default: 'pr-only'
+    
   config-path:
     description: 'Ruta al archivo de configuración personalizado de gitleaks (.gitleaks.toml)'
     required: false
@@ -346,12 +351,73 @@ runs:
         
         # Ejecutar gitleaks y capturar resultado
         GITLEAKS_EXIT_CODE=0
-        gitleaks detect \
-          --config=.gitleaks.toml \
-          --verbose \
-          --redact \
-          --report-format json \
-          --report-path gitleaks-report.json || GITLEAKS_EXIT_CODE=$?
+        
+        # Determinar modo de escaneo según configuración
+        SCAN_MODE="${{ inputs.scan-mode }}"
+        echo "🔍 Modo de escaneo configurado: $SCAN_MODE"
+        
+        case $SCAN_MODE in
+          "pr-only")
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "🔍 Escaneando solo cambios del PR..."
+              gitleaks detect \
+                --config=.gitleaks.toml \
+                --verbose \
+                --redact \
+                --report-format json \
+                --report-path gitleaks-report.json \
+                --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" || GITLEAKS_EXIT_CODE=$?
+            else
+              echo "🔍 No es PR, escaneando último commit..."
+              gitleaks detect \
+                --config=.gitleaks.toml \
+                --verbose \
+                --redact \
+                --report-format json \
+                --report-path gitleaks-report.json \
+                --log-opts="HEAD^..HEAD" || GITLEAKS_EXIT_CODE=$?
+            fi
+            ;;
+          "commit-only")
+            echo "🔍 Escaneando solo el último commit..."
+            gitleaks detect \
+              --config=.gitleaks.toml \
+              --verbose \
+              --redact \
+              --report-format json \
+              --report-path gitleaks-report.json \
+              --log-opts="HEAD^..HEAD" || GITLEAKS_EXIT_CODE=$?
+            ;;
+          "full-history")
+            echo "🔍 Escaneando historial completo..."
+            gitleaks detect \
+              --config=.gitleaks.toml \
+              --verbose \
+              --redact \
+              --report-format json \
+              --report-path gitleaks-report.json || GITLEAKS_EXIT_CODE=$?
+            ;;
+          *)
+            echo "⚠️ Modo de escaneo inválido: $SCAN_MODE, usando por defecto (pr-only)"
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              gitleaks detect \
+                --config=.gitleaks.toml \
+                --verbose \
+                --redact \
+                --report-format json \
+                --report-path gitleaks-report.json \
+                --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" || GITLEAKS_EXIT_CODE=$?
+            else
+              gitleaks detect \
+                --config=.gitleaks.toml \
+                --verbose \
+                --redact \
+                --report-format json \
+                --report-path gitleaks-report.json \
+                --log-opts="HEAD^..HEAD" || GITLEAKS_EXIT_CODE=$?
+            fi
+            ;;
+        esac
         
         echo "🔍 Gitleaks exit code: $GITLEAKS_EXIT_CODE"
         

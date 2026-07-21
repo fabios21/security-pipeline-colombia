@@ -21,6 +21,7 @@ jobs:
       id: security
       uses: fabios21/security-pipeline-colombia@main
       with:
+        scan-mode: 'pr-only'  # Solo escanear cambios del PR, no historial
         compliance-level: 'standard'
         timezone: 'America/Bogota'
         report-language: 'es_CO'
