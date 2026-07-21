@@ -1,0 +1,158 @@
+name: Security Pipeline Colombia - Complete Example
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  security-analysis:
+    name: 🔒 Security Pipeline Colombia
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Necesario para gitleaks
+          
+      - name: Run Security Pipeline Colombia
+        id: security
+        uses: fabios21/security-pipeline-colombia@v1.0.7
+        with:
+          config-path: '.gitleaks.toml'  # Configuración personalizada (opcional)
+          semgrep-config: 'p/owasp-top-ten'  # Reglas de Semgrep
+          compliance-level: 'ley_1581'  # Cumplimiento Ley 1581
+          timezone: 'America/Bogota'  # Zona horaria Colombia
+          report-language: 'es_CO'  # Español colombiano
+          report-formats: 'html,markdown,json'  # Formatos de reporte
+          block-on-secrets: true  # Bloquear si hay secretos
+          block-on-critical: true  # Bloquear si hay vulnerabilidades críticas
+          block-on-high: true  # Bloquear si hay vulnerabilidades altas
+          require-approval-on-medium: true  # Requerir aprobación para medias
+          slack-webhook: ''  # Webhook de Slack (opcional)
+          email-notifications: ''  # Emails para notificaciones (opcional)
+    
+    outputs:
+      validation-status: ${{ steps.security.outputs.validation-status }}
+      secret-count: ${{ steps.security.outputs.secret-count }}
+      vulnerability-count: ${{ steps.security.outputs.vulnerability-count }}
+      critical-count: ${{ steps.security.outputs.critical-count }}
+      high-count: ${{ steps.security.outputs.high-count }}
+      report-url: ${{ steps.security.outputs.report-url }}
+      compliance-status: ${{ steps.security.outputs.compliance-status }}
+  
+  upload-artifacts:
+    name: 📤 Upload Security Reports
+    needs: security-analysis
+    runs-on: ubuntu-latest
+    if: always()  # Siempre ejecutar, incluso si falla el análisis
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Download security artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: security-artifacts
+          path: ./security-artifacts
+          
+      - name: Upload security reports as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: ./security-artifacts
+          retention-days: 30  # Guardar por 30 días
+          
+      - name: Show report summary
+        run: |
+          echo "📊 RESUMEN DE ANÁLISIS DE SEGURIDAD"
+          echo "====================================="
+          echo ""
+          echo "🔍 Estado validación: ${{ needs.security-analysis.outputs.validation-status }}"
+          echo "🔑 Secretos detectados: ${{ needs.security-analysis.outputs.secret-count }}"
+          echo "⚠️  Vulnerabilidades totales: ${{ needs.security-analysis.outputs.vulnerability-count }}"
+          echo "🔴 Críticas: ${{ needs.security-analysis.outputs.critical-count }}"
+          echo "🟠 Altas: ${{ needs.security-analysis.outputs.high-count }}"
+          echo "🏛️  Cumplimiento Ley 1581: ${{ needs.security-analysis.outputs.compliance-status }}"
+          echo ""
+          echo "📄 Reportes disponibles en: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+  post-analysis:
+    name: 📝 Post-Analysis Actions
+    needs: [security-analysis, upload-artifacts]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Create PR comment with summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const validationStatus = '${{ needs.security-analysis.outputs.validation-status }}';
+            const secretCount = '${{ needs.security-analysis.outputs.secret-count }}';
+            const vulnCount = '${{ needs.security-analysis.outputs.vulnerability-count }}';
+            const criticalCount = '${{ needs.security-analysis.outputs.critical-count }}';
+            const highCount = '${{ needs.security-analysis.outputs.high-count }}';
+            const complianceStatus = '${{ needs.security-analysis.outputs.compliance-status }}';
+            
+            let statusEmoji = '✅';
+            let statusText = 'APROBADO';
+            
+            if (validationStatus === 'failed') {
+              statusEmoji = '❌';
+              statusText = 'BLOQUEADO';
+            } else if (validationStatus === 'requires_approval') {
+              statusEmoji = '⚠️';
+              statusText = 'APROBACIÓN REQUERIDA';
+            }
+            
+            const comment = `
+            ## 🔒 Security Pipeline Colombia - Análisis Completado
+            
+            ${statusEmoji} **Estado:** ${statusText}
+            
+            📊 **Resumen de Hallazgos:**
+            - 🔑 **Secretos detectados:** ${secretCount}
+            - ⚠️  **Vulnerabilidades totales:** ${vulnCount}
+            - 🔴 **Críticas:** ${criticalCount}
+            - 🟠 **Altas:** ${highCount}
+            - 🏛️  **Cumplimiento Ley 1581:** ${complianceStatus}
+            
+            📄 **Reportes disponibles:**
+            Los reportes completos están disponibles en la ejecución de GitHub Actions.
+            
+            🔍 **Acceso a reportes:**
+            1. Haz clic en "Actions" en este repositorio
+            2. Encuentra esta ejecución (#${{ github.run_number }})
+            3. Descarga el artifact "security-reports"
+            4. Revisa los archivos HTML/Markdown/JSON generados
+            
+            ${validationStatus === 'failed' ? '🚫 **Acción requerida:** Corregir los problemas antes de proceder con el merge.' : ''}
+            ${validationStatus === 'requires_approval' ? '⚠️  **Acción requerida:** Revisión manual por el equipo de seguridad.' : ''}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+      - name: Send notification if critical issues
+        if: ${{ needs.security-analysis.outputs.critical-count > 0 || needs.security-analysis.outputs.secret-count > 0 }}
+        run: |
+          echo "🔔 NOTIFICACIÓN: Se detectaron problemas críticos de seguridad"
+          echo "Revisar ejecución: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+      - name: Update security dashboard
+        run: |
+          # Aquí podrías integrar con herramientas de dashboard de seguridad
+          echo "📈 Dashboard actualizado con resultados del análisis"
+          
+permissions:
+  contents: read
+  security-events: write
+  checks: write

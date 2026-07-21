@@ -588,14 +588,29 @@ runs:
         REPORT_LANG="${{ env.REPORT_LANG }}"
         
         # Listar archivos que se van a subir
-        echo "Archivos a subir:"
-        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json security-report-$REPORT_LANG.* 2>/dev/null || true
+        echo "📄 Archivos generados:"
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null || true
         
-        # Usar acciones/upload-artifact
-        echo "::group::Subiendo artifacts"
-        # En composite actions, debemos usar upload-artifact directamente
-        # Nota: Este paso será reemplazado por la acción upload-artifact separada
-        echo "📤 Archivos listos para ser subidos con actions/upload-artifact"
+        echo "::group::📊 Contenido del reporte visual:"
+        if [ -f "visual-report.txt" ]; then
+          cat visual-report.txt
+        else
+          echo "⚠️ No se encontró visual-report.txt"
+        fi
+        echo "::endgroup::"
+        
+        # Crear directorio para artifacts si no existe
+        mkdir -p security-artifacts
+        
+        # Copiar todos los reportes al directorio de artifacts
+        cp -f gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* security-artifacts/ 2>/dev/null || true
+        
+        echo "📁 Archivos listos en directorio: security-artifacts/"
+        ls -la security-artifacts/ 2>/dev/null || echo "⚠️ No hay archivos para subir"
+        
+        # Nota: En un workflow real, aquí se usaría actions/upload-artifact
+        # pero en una composite action, el workflow que la use debe manejar el upload
+        echo "✅ Artifacts preparados para ser subidos por el workflow principal"
         
     # Paso 11: Enviar notificaciones
     - name: Send notifications

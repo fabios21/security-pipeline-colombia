@@ -1,19 +1,25 @@
-name: Security Pipeline - Basic Usage
+name: 🔒 Security Pipeline Colombia - Basic Usage
 
 on:
   pull_request:
     branches: [main, master]
+  push:
+    branches: [main, master]
 
 jobs:
   security-scan:
+    name: 🛡️ Security Analysis
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Security Pipeline Colombia
-      uses: tu-usuario/security-pipeline-colombia@v1.0.0
+      with:
+        fetch-depth: 0  # Necesario para análisis de secretos
+        
+    - name: Run Security Pipeline Colombia
+      id: security
+      uses: fabios21/security-pipeline-colombia@v1.0.7
       with:
         compliance-level: 'ley_1581'
         timezone: 'America/Bogota'
@@ -22,13 +28,38 @@ jobs:
         block-on-critical: true
         block-on-high: true
         require-approval-on-medium: true
-        report-formats: 'html,markdown'
+        report-formats: 'html,markdown,json'
         
-    - name: Upload security reports
+    - name: Upload ALL security reports
+      if: always()  # Subir incluso si falla el análisis
       uses: actions/upload-artifact@v4
       with:
-        name: security-reports
+        name: security-reports-complete
         path: |
-          security-report-es.html
-          security-report-es.md
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          visual-report.txt
+          security-report-es_CO.*
         retention-days: 30
+        
+    - name: Show results summary
+      run: |
+        echo "🎯 ANÁLISIS DE SEGURIDAD COMPLETADO"
+        echo "===================================="
+        echo ""
+        echo "📊 Hallazgos disponibles en:"
+        echo "   • 📁 gitleaks-report.json → Secretos detectados"
+        echo "   • 📁 semgrep-results.sarif → Vulnerabilidades SAST"
+        echo "   • 📁 validation-result.json → Resultado validación"
+        echo "   • 📱 visual-report.txt → Reporte visual con emojis"
+        echo "   • 🌐 security-report-es_CO.html → Reporte HTML"
+        echo "   • 📝 security-report-es_CO.md → Reporte Markdown"
+        echo ""
+        echo "📍 Acceso a reportes:"
+        echo "   1. Ve a 'Actions' en este repositorio"
+        echo "   2. Encuentra esta ejecución"
+        echo "   3. Descarga 'security-reports-complete'"
+        echo ""
+        echo "⚠️  Nota: Si hay secretos o vulnerabilidades críticas,"
+        echo "     el merge será bloqueado automáticamente."

@@ -101,11 +101,39 @@ LC_ALL: es_CO.UTF-8
 - ⚠️ **APROBACIÓN REQUERIDA:** Vulnerabilidades medias/bajas detectadas
 - ❌ **FALLÓ:** Secretos expuestos o vulnerabilidades críticas/altas
 
-### Acceso a Reportes
-Los reportes están disponibles como artifacts en GitHub Actions:
-1. Navegar a la ejecución del workflow
-2. Descargar `security-report-es` (HTML/Markdown)
-3. Revisar comentarios en el PR con resumen de hallazgos
+### 📍 Acceso a Reportes Generados
+
+#### 📁 **Dónde se guardan los reportes:**
+Los reportes se generan durante la ejecución del pipeline y se guardan como **artifacts** en GitHub Actions:
+
+1. **Durante la ejecución:** Se crean archivos temporales en el runner
+2. **Como artifacts:** Se suben al final del workflow para su descarga
+3. **En la consola:** Se muestran visualmente durante la ejecución
+
+#### 📊 **Archivos generados:**
+- `gitleaks-report.json` → Resultados del escaneo de secretos
+- `semgrep-results.sarif` → Resultados del análisis SAST
+- `validation-result.json` → Resultado final de validación
+- `visual-report.txt` → 📱 **NUEVO**: Reporte visual con emojis y gráficos
+- `security-report-es_CO.html` → Reporte HTML en español
+- `security-report-es_CO.md` → Reporte Markdown en español
+
+#### 📥 **Cómo acceder a los reportes:**
+1. **Navegar** a la ejecución del workflow en GitHub Actions
+2. **Hacer clic** en "Artifacts" (al final de la ejecución)
+3. **Descargar** el artifact llamado `security-artifacts`
+4. **Extraer** los archivos para revisar todos los reportes
+
+#### 👁️ **Visualización en tiempo real:**
+Durante la ejecución, puedes ver:
+- ✅ Resumen visual con emojis en la consola
+- 🔴 Alertas críticas con indicadores de color
+- 📈 Barras de progreso para vulnerabilidades
+- 🏛️ Secciones específicas sobre cumplimiento Ley 1581
+
+#### 📚 **Documentación completa:**
+Para información detallada sobre todos los reportes generados, consulta:
+[📍 REPORTES_GENERADOS.md](REPORTES_GENERADOS.md) - Guía completa sobre dónde quedan y cómo acceder a los reportes
 
 ## 📊 Ejemplo de Reporte
 
