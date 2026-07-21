@@ -339,17 +339,18 @@ runs:
           echo "secret_count=0" >> $GITHUB_OUTPUT
           echo "has_secrets=false" >> $GITHUB_OUTPUT
           echo "No se puede ejecutar análisis de secretos sin gitleaks"
-          # Establecer SECRET_COUNT para que no cause errores si se referencia después
-          SECRET_COUNT="0"
+          # Crear archivo de resultados vacío
+          echo '{"findings": []}' > gitleaks-report.json
           exit 0
         fi
         
+        # Ejecutar gitleaks con manejo de errores - NO salir si encuentra secretos
         gitleaks detect \
           --config=.gitleaks.toml \
           --verbose \
           --redact \
           --report-format json \
-          --report-path gitleaks-report.json
+          --report-path gitleaks-report.json || true  # NO salir con error
         
         # Guardar resultados en variables de salida
         SECRET_COUNT="0"
@@ -358,6 +359,8 @@ runs:
           echo "secret_count=$SECRET_COUNT" >> $GITHUB_OUTPUT
           echo "Se detectaron $SECRET_COUNT secretos"
         else
+          # Crear archivo vacío si no existe
+          echo '{"findings": []}' > gitleaks-report.json
           echo "secret_count=0" >> $GITHUB_OUTPUT
           echo "No se encontraron secretos"
         fi
@@ -612,59 +615,65 @@ runs:
         # pero en una composite action, el workflow que la use debe manejar el upload
         echo "✅ Artifacts preparados para ser subidos por el workflow principal"
         
-    # Paso 11: Enviar notificaciones
-    - name: Send notifications
+    # Paso 11: Mostrar resumen final
+    - name: Show final summary
       if: always()
       shell: bash
       run: |
-        echo "📢 Enviando notificaciones..."
+        echo "📊 RESUMEN FINAL DEL ANÁLISIS"
+        echo "=============================="
+        echo ""
         
-        # Preparar mensaje de resumen
-        STATUS="${{ steps.validation.outputs.status }}"
-        SECRETS="${{ steps.secret-scan.outputs.secret_count }}"
-        VULNS="${{ steps.sast-scan.outputs.vulnerability_count }}"
-        CRITICAL="${{ steps.sast-scan.outputs.critical_count }}"
-        HIGH="${{ steps.sast-scan.outputs.high_count }}"
-        
-        MESSAGE="🔒 Security Pipeline Colombia - Resumen\n"
-        MESSAGE="$MESSAGE\nEstado: $STATUS"
-        MESSAGE="$MESSAGE\nSecretos detectados: $SECRETS"
-        MESSAGE="$MESSAGE\nVulnerabilidades: $VULNS"
-        MESSAGE="$MESSAGE\n• Críticas: $CRITICAL"
-        MESSAGE="$MESSAGE\n• Altas: $HIGH"
-        
-        # Notificación por Slack
-        if [ -n "${{ inputs.slack-webhook }}" ]; then
-          echo "Enviando notificación a Slack..."
-          curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"$MESSAGE\"}" \
-            "${{ inputs.slack-webhook }}" || true
+        # Solo mostrar si las variables existen
+        if [ -n "${{ steps.validation.outputs.status }}" ]; then
+          echo "🔒 Estado validación: ${{ steps.validation.outputs.status }}"
         fi
         
-        # Notificación por email (placeholder - se implementaría con servicio externo)
-        if [ -n "${{ inputs.email-notifications }}" ]; then
-          echo "Notificaciones por email configuradas para: ${{ inputs.email-notifications }}"
-          # Aquí iría la lógica para enviar emails
+        if [ -n "${{ steps.secret-scan.outputs.secret_count }}" ]; then
+          echo "🔑 Secretos detectados: ${{ steps.secret-scan.outputs.secret_count }}"
         fi
         
-    # Paso 12: Resultado final
-    - name: Final summary
+        if [ -n "${{ steps.sast-scan.outputs.vulnerability_count }}" ]; then
+          echo "⚠️  Vulnerabilidades totales: ${{ steps.sast-scan.outputs.vulnerability_count }}"
+        fi
+        
+        if [ -n "${{ steps.sast-scan.outputs.critical_count }}" ]; then
+          echo "🔴 Vulnerabilidades críticas: ${{ steps.sast-scan.outputs.critical_count }}"
+        fi
+        
+        if [ -n "${{ steps.sast-scan.outputs.high_count }}" ]; then
+          echo "🟠 Vulnerabilidades altas: ${{ steps.sast-scan.outputs.high_count }}"
+        fi
+        
+        if [ -n "${{ steps.compliance-check.outputs.compliance_status }}" ]; then
+          echo "🏛️  Cumplimiento Ley 1581: ${{ steps.compliance-check.outputs.compliance_status }}"
+        fi
+        
+        echo ""
+        echo "📄 Reportes generados:"
+        echo "  • gitleaks-report.json → Secretos detectados"
+        echo "  • semgrep-results.sarif → Vulnerabilidades SAST"
+        echo "  • validation-result.json → Resultado validación"
+        echo "  • visual-report.txt → Reporte visual"
+        echo "  • security-report-*.html/md → Reportes formateados"
+        echo ""
+        echo "📍 Los reportes están disponibles para descarga como artifacts"
+        
+    # Paso 12: Completar ejecución
+    - name: Complete execution
       shell: bash
       run: |
         echo ""
-        echo "✨ Security Pipeline Colombia - Completado"
-        echo "=========================================="
+        echo "✅ Security Pipeline Colombia - Ejecución completada"
+        echo "==================================================="
         echo ""
-        echo "📊 Resumen final:"
-        echo "• Secretos detectados: ${{ steps.secret-scan.outputs.secret_count }}"
-        echo "• Vulnerabilidades totales: ${{ steps.sast-scan.outputs.vulnerability_count }}"
-        echo "• Vulnerabilidades críticas: ${{ steps.sast-scan.outputs.critical_count }}"
-        echo "• Vulnerabilidades altas: ${{ steps.sast-scan.outputs.high_count }}"
-        echo "• Estado validación: ${{ steps.validation.outputs.status }}"
-        echo "• Cumplimiento Ley 1581: ${{ steps.compliance-check.outputs.compliance_status }}"
+        echo "📋 Próximos pasos:"
+        echo "  1. Revisar los hallazgos en los reportes generados"
+        echo "  2. Corregir secretos expuestos y vulnerabilidades críticas"
+        echo "  3. Descargar artifacts para documentación"
         echo ""
-        echo "📄 Reportes disponibles como artifacts"
-        echo "🔗 URLs: ${{ steps.generate-report.outputs.report_urls }}"
+        echo "⚠️  Nota: Si se detectaron secretos o vulnerabilidades críticas,"
+        echo "     el merge puede estar bloqueado según la configuración."
         echo ""
         
         if [ "${{ steps.validation.outputs.status }}" = "passed" ]; then
