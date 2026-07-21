@@ -970,18 +970,65 @@ runs:
         echo "=============================="
         echo ""
         
-        # Usar datos de variables de entorno (más confiables)
-        ACTUAL_SECRETS="${FINAL_SECRETS:-0}"
-        ACTUAL_VULNS="0"
-        ACTUAL_CRITICAL="${FINAL_CRITICAL:-0}"
-        ACTUAL_HIGH="${FINAL_HIGH:-0}"
+        # Debug: Verificar variables de entorno primero
+        echo "🔍 DEBUG - Variables de entorno:"
+        echo "  FINAL_SECRETS=${FINAL_SECRETS:-'NO_DEFINIDA'}"
+        echo "  FINAL_CRITICAL=${FINAL_CRITICAL:-'NO_DEFINIDA'}"
+        echo "  FINAL_HIGH=${FINAL_HIGH:-'NO_DEFINIDA'}"
+        echo ""
         
-        # Solo leer vulnerabilidades totales si no tenemos datos del paso anterior
-        if [ -f "semgrep-results.sarif" ]; then
-          ACTUAL_VULNS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
+        # MÉTODO ROBUSTO: Leer directamente de archivos siempre
+        ACTUAL_SECRETS="0"
+        ACTUAL_VULNS="0"
+        ACTUAL_CRITICAL="0"
+        ACTUAL_HIGH="0"
+        
+        echo "🔍 Leyendo datos directamente de archivos..."
+        
+        if [ -f "gitleaks-report.json" ] && [ -s "gitleaks-report.json" ]; then
+          echo "📄 Analizando gitleaks-report.json..."
+          
+          # Intentar múltiples métodos como antes
+          METHOD1=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+          METHOD2=$(jq '. | length' gitleaks-report.json 2>/dev/null || echo "0")  
+          METHOD3=$(grep -o '"RuleID"' gitleaks-report.json | wc -l 2>/dev/null || echo "0")
+          
+          echo "  Método 1: $METHOD1"
+          echo "  Método 2: $METHOD2"
+          echo "  Método 3: $METHOD3"
+          
+          # Usar el más alto
+          ACTUAL_SECRETS="$METHOD1"
+          if [ "$METHOD2" -gt "$ACTUAL_SECRETS" ]; then
+            ACTUAL_SECRETS="$METHOD2"
+          fi
+          if [ "$METHOD3" -gt "$ACTUAL_SECRETS" ]; then
+            ACTUAL_SECRETS="$METHOD3"
+          fi
+          
+          echo "  ✅ Secretos finales: $ACTUAL_SECRETS"
+        else
+          echo "❌ gitleaks-report.json no existe o está vacío"
         fi
         
-        # Mostrar datos CORRECTOS
+        if [ -f "semgrep-results.sarif" ] && [ -s "semgrep-results.sarif" ]; then
+          echo "📄 Analizando semgrep-results.sarif..."
+          
+          ACTUAL_VULNS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_CRITICAL=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_HIGH=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          
+          echo "  Vulnerabilidades totales: $ACTUAL_VULNS"
+          echo "  Críticas: $ACTUAL_CRITICAL"
+          echo "  Altas: $ACTUAL_HIGH"
+        else
+          echo "❌ semgrep-results.sarif no existe o está vacío"
+        fi
+        
+        echo ""
+        echo "📊 DATOS FINALES (leídos directamente):"
+        
+        # Mostrar datos CORRECTOS leídos directamente
         echo "🔑 Secretos detectados: $ACTUAL_SECRETS"
         echo "⚠️  Vulnerabilidades totales: $ACTUAL_VULNS"
         echo "🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
