@@ -564,20 +564,19 @@ runs:
               VULN_COUNT_VISUAL=$(jq '.runs[0].results | length' semgrep-results.sarif 2>/dev/null || echo "0")
             fi
             
-            cat > visual-report.txt << 'VISUALEOF'
-================================================================================
-🔒 REPORTE VISUAL DE SEGURIDAD - COLOMBIA  
-================================================================================
-
-❌ ESTADO: ERROR EN GENERACIÓN DE REPORTE COMPLETO
-
-📊 DATOS BÁSICOS:
-VISUALEOF
+            # Crear reporte visual línea por línea (más seguro para YAML)
+            echo "================================================================================" > visual-report.txt
+            echo "🔒 REPORTE VISUAL DE SEGURIDAD - COLOMBIA" >> visual-report.txt  
+            echo "================================================================================" >> visual-report.txt
+            echo "" >> visual-report.txt
+            echo "❌ ESTADO: ERROR EN GENERACIÓN DE REPORTE COMPLETO" >> visual-report.txt
+            echo "" >> visual-report.txt
+            echo "📊 DATOS BÁSICOS:" >> visual-report.txt
             echo "🔑 Secretos detectados: $SECRET_COUNT_VISUAL" >> visual-report.txt
             echo "⚠️  Vulnerabilidades detectadas: $VULN_COUNT_VISUAL" >> visual-report.txt
             echo "" >> visual-report.txt
             echo "📄 Revisar validation-result.json para información completa" >> visual-report.txt
-            echo "=================================================================================" >> visual-report.txt
+            echo "================================================================================" >> visual-report.txt
           }
         else
           echo "⚠️ Script visual_report.py no encontrado, creando reporte básico..."
@@ -610,31 +609,30 @@ VISUALEOF
                   --format html \
                   --language $REPORT_LANG || {
                   echo "⚠️ Error generando reporte HTML, creando uno básico..."
-                  cat > "security-report-$REPORT_LANG.html" << 'HTMLEOF'
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Reporte de Seguridad</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .header { color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; }
-        .status { background: #ffebee; padding: 15px; border-radius: 5px; margin: 10px 0; }
-        .error { color: #d32f2f; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🔒 Reporte de Seguridad Informática</h1>
-    </div>
-    <div class="status">
-        <h2>Estado del Análisis</h2>
-        <p class="error">⚠️ Error generando reporte completo</p>
-        <p>Revisar validation-result.json para información detallada.</p>
-    </div>
-</body>
-</html>
-HTMLEOF
+                  # Crear HTML básico línea por línea (más seguro para YAML)
+                  echo "<!DOCTYPE html>" > "security-report-$REPORT_LANG.html"
+                  echo "<html lang=\"es\">" >> "security-report-$REPORT_LANG.html"
+                  echo "<head>" >> "security-report-$REPORT_LANG.html"
+                  echo "    <meta charset=\"UTF-8\">" >> "security-report-$REPORT_LANG.html"
+                  echo "    <title>Reporte de Seguridad</title>" >> "security-report-$REPORT_LANG.html"
+                  echo "    <style>" >> "security-report-$REPORT_LANG.html"
+                  echo "        body { font-family: Arial, sans-serif; margin: 20px; }" >> "security-report-$REPORT_LANG.html"
+                  echo "        .header { color: #d32f2f; border-bottom: 2px solid #d32f2f; padding-bottom: 10px; }" >> "security-report-$REPORT_LANG.html"
+                  echo "        .status { background: #ffebee; padding: 15px; border-radius: 5px; margin: 10px 0; }" >> "security-report-$REPORT_LANG.html"
+                  echo "        .error { color: #d32f2f; font-weight: bold; }" >> "security-report-$REPORT_LANG.html"
+                  echo "    </style>" >> "security-report-$REPORT_LANG.html"
+                  echo "</head>" >> "security-report-$REPORT_LANG.html"
+                  echo "<body>" >> "security-report-$REPORT_LANG.html"
+                  echo "    <div class=\"header\">" >> "security-report-$REPORT_LANG.html"
+                  echo "        <h1>🔒 Reporte de Seguridad Informática</h1>" >> "security-report-$REPORT_LANG.html"
+                  echo "    </div>" >> "security-report-$REPORT_LANG.html"
+                  echo "    <div class=\"status\">" >> "security-report-$REPORT_LANG.html"
+                  echo "        <h2>Estado del Análisis</h2>" >> "security-report-$REPORT_LANG.html"
+                  echo "        <p class=\"error\">⚠️ Error generando reporte completo</p>" >> "security-report-$REPORT_LANG.html"
+                  echo "        <p>Revisar validation-result.json para información detallada.</p>" >> "security-report-$REPORT_LANG.html"
+                  echo "    </div>" >> "security-report-$REPORT_LANG.html"
+                  echo "</body>" >> "security-report-$REPORT_LANG.html"
+                  echo "</html>" >> "security-report-$REPORT_LANG.html"
                 }
               else
                 echo "⚠️ Script generate_report.py no encontrado, saltando reporte HTML"
@@ -651,33 +649,31 @@ HTMLEOF
                   --format markdown \
                   --language $REPORT_LANG || {
                   echo "⚠️ Error generando reporte Markdown, creando uno básico..."
-                  cat > "security-report-$REPORT_LANG.md" << 'MDEOF'
-# 🔒 Reporte de Seguridad Informática
-
-## Estado del Análisis
-
-⚠️ **Error:** No se pudo generar el reporte completo.
-
-Revisar `validation-result.json` para información detallada.
-
-## Archivos Disponibles
-
-- `gitleaks-report.json` - Resultados de secretos
-- `semgrep-results.sarif` - Vulnerabilidades SAST  
-- `validation-result.json` - Resumen de validación
-MDEOF
+                  # Crear Markdown básico línea por línea
+                  echo "# 🔒 Reporte de Seguridad Informática" > "security-report-$REPORT_LANG.md"
+                  echo "" >> "security-report-$REPORT_LANG.md"
+                  echo "## Estado del Análisis" >> "security-report-$REPORT_LANG.md"
+                  echo "" >> "security-report-$REPORT_LANG.md"
+                  echo "⚠️ **Error:** No se pudo generar el reporte completo." >> "security-report-$REPORT_LANG.md"
+                  echo "" >> "security-report-$REPORT_LANG.md"
+                  echo "Revisar \`validation-result.json\` para información detallada." >> "security-report-$REPORT_LANG.md"
+                  echo "" >> "security-report-$REPORT_LANG.md"
+                  echo "## Archivos Disponibles" >> "security-report-$REPORT_LANG.md"
+                  echo "" >> "security-report-$REPORT_LANG.md"
+                  echo "- \`gitleaks-report.json\` - Resultados de secretos" >> "security-report-$REPORT_LANG.md"
+                  echo "- \`semgrep-results.sarif\` - Vulnerabilidades SAST" >> "security-report-$REPORT_LANG.md"
+                  echo "- \`validation-result.json\` - Resumen de validación" >> "security-report-$REPORT_LANG.md"
                 }
               else
                 echo "⚠️ Script generate_report.py no encontrado, creando reporte Markdown básico..."
-                cat > "security-report-$REPORT_LANG.md" << 'BASICEOF'
-# 🔒 Reporte de Seguridad Informática
-
-**Error:** Script de generación no disponible.
-
-## Archivos de Datos Disponibles
-
-Revisar los archivos JSON/SARIF para información detallada.
-BASICEOF
+                # Crear Markdown básico línea por línea
+                echo "# 🔒 Reporte de Seguridad Informática" > "security-report-$REPORT_LANG.md"
+                echo "" >> "security-report-$REPORT_LANG.md"
+                echo "**Error:** Script de generación no disponible." >> "security-report-$REPORT_LANG.md"
+                echo "" >> "security-report-$REPORT_LANG.md"
+                echo "## Archivos de Datos Disponibles" >> "security-report-$REPORT_LANG.md"
+                echo "" >> "security-report-$REPORT_LANG.md"
+                echo "Revisar los archivos JSON/SARIF para información detallada." >> "security-report-$REPORT_LANG.md"
               fi
               
               echo "📊 Reporte Markdown: security-report-$REPORT_LANG.md"
