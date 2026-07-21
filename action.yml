@@ -358,18 +358,21 @@ runs:
           SECRET_COUNT=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
           echo "secret_count=$SECRET_COUNT" >> $GITHUB_OUTPUT
           echo "Se detectaron $SECRET_COUNT secretos"
+          
+          # Verificar si hay secretos críticos
+          if [ "$SECRET_COUNT" -gt 0 ]; then
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+            echo "⚠️ SECRETOS DETECTADOS: $SECRET_COUNT"
+          else
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+            echo "✅ No se encontraron secretos"
+          fi
         else
           # Crear archivo vacío si no existe
           echo '{"findings": []}' > gitleaks-report.json
           echo "secret_count=0" >> $GITHUB_OUTPUT
-          echo "No se encontraron secretos"
-        fi
-        
-        # Determinar si hay secretos críticos
-        if [ "$SECRET_COUNT" -gt 0 ]; then
-          echo "has_secrets=true" >> $GITHUB_OUTPUT
-        else
           echo "has_secrets=false" >> $GITHUB_OUTPUT
+          echo "✅ No se encontraron secretos"
         fi
         
     # Paso 6: Ejecutar análisis SAST
@@ -546,13 +549,35 @@ runs:
         if [ -f ".github/scripts/visual_report.py" ] && [ -f "$VALIDATION_FILE" ]; then
           python3 .github/scripts/visual_report.py \
             --validation "$VALIDATION_FILE" \
-            --output visual-report.txt || {
+            --output visual-report.txt 2>&1 || {
             echo "⚠️ Error generando reporte visual, creando uno básico..."
-            echo "📊 REPORTE VISUAL DE SEGURIDAD" > visual-report.txt
-            echo "============================" >> visual-report.txt
+            
+            # Generar reporte visual básico usando datos de los archivos
+            SECRET_COUNT_VISUAL="0"
+            VULN_COUNT_VISUAL="0"
+            
+            if [ -f "gitleaks-report.json" ]; then
+              SECRET_COUNT_VISUAL=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+            fi
+            
+            if [ -f "semgrep-results.sarif" ]; then
+              VULN_COUNT_VISUAL=$(jq '.runs[0].results | length' semgrep-results.sarif 2>/dev/null || echo "0")
+            fi
+            
+            cat > visual-report.txt << 'VISUALEOF'
+================================================================================
+🔒 REPORTE VISUAL DE SEGURIDAD - COLOMBIA  
+================================================================================
+
+❌ ESTADO: ERROR EN GENERACIÓN DE REPORTE COMPLETO
+
+📊 DATOS BÁSICOS:
+VISUALEOF
+            echo "🔑 Secretos detectados: $SECRET_COUNT_VISUAL" >> visual-report.txt
+            echo "⚠️  Vulnerabilidades detectadas: $VULN_COUNT_VISUAL" >> visual-report.txt
             echo "" >> visual-report.txt
-            echo "❌ Error: No se pudo generar el reporte visual completo" >> visual-report.txt
-            echo "📄 Revisar validation-result.json para detalles" >> visual-report.txt
+            echo "📄 Revisar validation-result.json para información completa" >> visual-report.txt
+            echo "=================================================================================" >> visual-report.txt
           }
         else
           echo "⚠️ Script visual_report.py no encontrado, creando reporte básico..."
@@ -563,6 +588,14 @@ runs:
             echo "Secretos: $(jq -r '.summary.total_secrets' "$VALIDATION_FILE" 2>/dev/null || echo "0")" >> visual-report.txt
             echo "Vulnerabilidades: $(jq -r '.summary.total_vulnerabilities' "$VALIDATION_FILE" 2>/dev/null || echo "0")" >> visual-report.txt
           fi
+        fi
+        
+        # Verificar que visual-report.txt se creó
+        if [ -f "visual-report.txt" ]; then
+          echo "✅ visual-report.txt generado correctamente"
+        else
+          echo "❌ No se pudo generar visual-report.txt, creando archivo mínimo..."
+          echo "⚠️ Error: No se pudo generar el reporte visual" > visual-report.txt
         fi
         
         # Generar reportes en diferentes formatos
@@ -710,25 +743,30 @@ BASICEOF
         echo "=============================="
         echo ""
         
-        # Solo mostrar si las variables existen
+        # Leer datos reales de los archivos generados
+        ACTUAL_SECRETS="0"
+        ACTUAL_VULNS="0"
+        ACTUAL_CRITICAL="0"
+        ACTUAL_HIGH="0"
+        
+        if [ -f "gitleaks-report.json" ]; then
+          ACTUAL_SECRETS=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+        fi
+        
+        if [ -f "semgrep-results.sarif" ]; then
+          ACTUAL_VULNS=$(jq '.runs[0].results | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_CRITICAL=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_HIGH=$(jq '[.runs[0].results[] | select(.properties."security-severity" >= 7.0 and .properties."security-severity" < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+        fi
+        
+        # Mostrar datos reales (no los de los outputs que pueden estar mal)
+        echo "🔑 Secretos detectados: $ACTUAL_SECRETS"
+        echo "⚠️  Vulnerabilidades totales: $ACTUAL_VULNS"
+        echo "🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
+        echo "🟠 Vulnerabilidades altas: $ACTUAL_HIGH"
+        
         if [ -n "${{ steps.validation.outputs.status }}" ]; then
           echo "🔒 Estado validación: ${{ steps.validation.outputs.status }}"
-        fi
-        
-        if [ -n "${{ steps.secret-scan.outputs.secret_count }}" ]; then
-          echo "🔑 Secretos detectados: ${{ steps.secret-scan.outputs.secret_count }}"
-        fi
-        
-        if [ -n "${{ steps.sast-scan.outputs.vulnerability_count }}" ]; then
-          echo "⚠️  Vulnerabilidades totales: ${{ steps.sast-scan.outputs.vulnerability_count }}"
-        fi
-        
-        if [ -n "${{ steps.sast-scan.outputs.critical_count }}" ]; then
-          echo "🔴 Vulnerabilidades críticas: ${{ steps.sast-scan.outputs.critical_count }}"
-        fi
-        
-        if [ -n "${{ steps.sast-scan.outputs.high_count }}" ]; then
-          echo "🟠 Vulnerabilidades altas: ${{ steps.sast-scan.outputs.high_count }}"
         fi
         
         if [ -n "${{ steps.compliance-check.outputs.compliance_status }}" ]; then
