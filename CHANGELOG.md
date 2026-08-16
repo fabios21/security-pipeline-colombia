@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-16
+
+### Fixed
+- **Conteos multilinea en bash**: Corregido error `integer expression expected` cuando `jq` devolvia varias lineas (p. ej. SARIF con multiples runs).
+- **GITHUB_ENV invalido**: Normalizacion de contadores antes de escribir `FINAL_SECRETS`, `FINAL_CRITICAL` y `FINAL_HIGH`.
+- **Consulta TOTAL_RESULTS**: Reemplazado `.runs[]?.results? | length` por agregacion `[.runs[]?.results[]?] | length`.
+
 ## [1.0.6] - 2026-07-20
 
 ### Fixed

@@ -431,6 +431,8 @@ runs:
         
         echo "🔍 Gitleaks exit code: $GITLEAKS_EXIT_CODE"
         
+        source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
+        
         # Guardar resultados en variables de salida
         SECRET_COUNT="0"
         if [ -f "gitleaks-report.json" ]; then
@@ -444,15 +446,15 @@ runs:
             echo "🔢 Intentando parsear JSON..."
             
             # Método 1: Estructura estándar con .findings
-            SECRET_COUNT_1=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+            SECRET_COUNT_1=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
             echo "  Método 1 (.findings): $SECRET_COUNT_1"
             
             # Método 2: Si es un array directo
-            SECRET_COUNT_2=$(jq '. | length' gitleaks-report.json 2>/dev/null || echo "0")
+            SECRET_COUNT_2=$(sanitize_count "$(jq -r '. | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
             echo "  Método 2 (array directo): $SECRET_COUNT_2"
             
             # Método 3: Contar manualmente con grep
-            SECRET_COUNT_3=$(grep -o '"RuleID"' gitleaks-report.json | wc -l || echo "0")
+            SECRET_COUNT_3=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
             echo "  Método 3 (grep RuleID): $SECRET_COUNT_3"
             
             # Usar el número más alto (más conservador)
@@ -501,6 +503,8 @@ runs:
       run: |
         echo "🔍 Ejecutando análisis SAST..."
         
+        source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
+        
         # Inicializar variables
         CRITICAL_COUNT="0"
         HIGH_COUNT="0"
@@ -525,13 +529,13 @@ runs:
           echo "Tamaño: $(wc -c < semgrep-results.sarif) bytes"
           
           # Contar vulnerabilidades por severidad usando diferentes métodos
-          CRITICAL_COUNT=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          HIGH_COUNT=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          MEDIUM_COUNT=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          LOW_COUNT=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          CRITICAL_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          HIGH_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          MEDIUM_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          LOW_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
           
-          # Contar total de una manera más simple
-          TOTAL_RESULTS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          # Total agregado de todos los runs (evita salida multilinea por run)
+          TOTAL_RESULTS=$(sanitize_count "$(jq -r '[.runs[]?.results[]?] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
           TOTAL_VULNS=$((CRITICAL_COUNT + HIGH_COUNT + MEDIUM_COUNT + LOW_COUNT))
           
           echo "📊 Conteo de vulnerabilidades:"
@@ -661,6 +665,8 @@ runs:
       run: |
         echo "📄 Generando reporte de seguridad..."
         
+        source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
+        
         # Determinar formatos
         IFS=',' read -ra FORMATS <<< "${{ inputs.report-formats }}"
         
@@ -702,11 +708,11 @@ runs:
             VULN_COUNT_VISUAL="0"
             
             if [ -f "gitleaks-report.json" ]; then
-              SECRET_COUNT_VISUAL=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+              SECRET_COUNT_VISUAL=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
             fi
             
             if [ -f "semgrep-results.sarif" ]; then
-              VULN_COUNT_VISUAL=$(jq '.runs[0].results | length' semgrep-results.sarif 2>/dev/null || echo "0")
+              VULN_COUNT_VISUAL=$(sanitize_count "$(jq -r '[.runs[]?.results[]?] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
             fi
             
             # Crear reporte visual línea por línea (más seguro para YAML)
@@ -882,23 +888,23 @@ runs:
         echo "🔍 Verificación final de políticas de seguridad..."
         echo ""
         
+        source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
+        
         # Leer datos reales de los archivos generados (ANTES de fallar)
         ACTUAL_SECRETS="0"
         ACTUAL_CRITICAL="0"  
         ACTUAL_HIGH="0"
         
         if [ -f "gitleaks-report.json" ]; then
-          # Usar la misma lógica de parsing que en el paso anterior
-          ACTUAL_SECRETS=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
+          ACTUAL_SECRETS=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
           if [ "$ACTUAL_SECRETS" = "0" ]; then
-            # Fallback con grep si jq falla
-            ACTUAL_SECRETS=$(grep -o '"RuleID"' gitleaks-report.json | wc -l 2>/dev/null || echo "0")
+            ACTUAL_SECRETS=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
           fi
         fi
         
         if [ -f "semgrep-results.sarif" ]; then
-          ACTUAL_CRITICAL=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          ACTUAL_HIGH=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          ACTUAL_CRITICAL=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          ACTUAL_HIGH=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
         fi
         
         echo "📊 Resultados del análisis:"
@@ -981,6 +987,8 @@ runs:
         echo "=============================="
         echo ""
         
+        source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
+        
         # MÉTODO DIRECTO: Leer siempre de archivos (más confiable)
         FINAL_SECRETS="0"
         FINAL_VULNS="0"
@@ -993,9 +1001,9 @@ runs:
         if [ -f "gitleaks-report.json" ] && [ -s "gitleaks-report.json" ]; then
           
           # Usar la misma lógica exacta del paso de detección (método 2 funcionó)
-          SECRET_COUNT_1=$(jq '.findings | length' gitleaks-report.json 2>/dev/null || echo "0")
-          SECRET_COUNT_2=$(jq '. | length' gitleaks-report.json 2>/dev/null || echo "0")
-          SECRET_COUNT_3=$(grep -o '"RuleID"' gitleaks-report.json | wc -l 2>/dev/null || echo "0")
+          SECRET_COUNT_1=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
+          SECRET_COUNT_2=$(sanitize_count "$(jq -r '. | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
+          SECRET_COUNT_3=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
           
           # Usar el mismo criterio del paso 5
           if [ "$SECRET_COUNT_1" -gt "0" ]; then
@@ -1013,13 +1021,13 @@ runs:
         if [ -f "semgrep-results.sarif" ] && [ -s "semgrep-results.sarif" ]; then
           
           # Contar por severidad igual que en paso 6
-          FINAL_CRITICAL=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          FINAL_HIGH=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          FINAL_MEDIUM=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
-          FINAL_LOW=$(jq '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          FINAL_CRITICAL=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          FINAL_HIGH=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          FINAL_MEDIUM=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          FINAL_LOW=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
           
-          # Total de resultados
-          TOTAL_RESULTS=$(jq '.runs[]?.results? | length' semgrep-results.sarif 2>/dev/null || echo "0")
+          # Total agregado de todos los runs
+          TOTAL_RESULTS=$(sanitize_count "$(jq -r '[.runs[]?.results[]?] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
           CALCULATED_TOTAL=$((FINAL_CRITICAL + FINAL_HIGH + FINAL_MEDIUM + FINAL_LOW))
           
           # Usar el mayor entre calculado y total (más conservador como en paso 6)
