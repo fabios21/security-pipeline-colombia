@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-08-22
+
+### Fixed
+- El gate final ahora bloquea la ejecución cuando existen hallazgos medios o bajos y `require-approval-on-medium: true`.
+- Los conteos de hallazgos medios y bajos se conservan en el resumen final y se reutilizan en la decisión de bloqueo.
+- Cuando la aprobación no es requerida, el mensaje del gate informa explícitamente que esos hallazgos permiten continuar según la política configurada.
+
 ## [1.1.4] - 2026-08-22
 
 ### Fixed

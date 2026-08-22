@@ -890,10 +890,11 @@ runs:
         
         source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
         
-        # Leer datos reales de los archivos generados (ANTES de fallar)
         ACTUAL_SECRETS="0"
-        ACTUAL_CRITICAL="0"  
+        ACTUAL_CRITICAL="0"
         ACTUAL_HIGH="0"
+        ACTUAL_MEDIUM="0"
+        ACTUAL_LOW="0"
         
         if [ -f "gitleaks-report.json" ]; then
           ACTUAL_SECRETS=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
@@ -905,18 +906,24 @@ runs:
         if [ -f "semgrep-results.sarif" ]; then
           ACTUAL_CRITICAL=$(count_sarif_by_severity critical semgrep-results.sarif)
           ACTUAL_HIGH=$(count_sarif_by_severity high semgrep-results.sarif)
+          ACTUAL_MEDIUM=$(count_sarif_by_severity medium semgrep-results.sarif)
+          ACTUAL_LOW=$(count_sarif_by_severity low semgrep-results.sarif)
         fi
         
         echo "📊 Resultados del análisis:"
         echo "  🔑 Secretos detectados: $ACTUAL_SECRETS"
         echo "  🔴 Vulnerabilidades críticas: $ACTUAL_CRITICAL"
         echo "  🟠 Vulnerabilidades altas: $ACTUAL_HIGH"
+        echo "  🟡 Vulnerabilidades medias: $ACTUAL_MEDIUM"
+        echo "  🟢 Vulnerabilidades bajas: $ACTUAL_LOW"
         echo ""
         
         # Guardar en variables de entorno para el resumen final
         echo "FINAL_SECRETS=$ACTUAL_SECRETS" >> $GITHUB_ENV
         echo "FINAL_CRITICAL=$ACTUAL_CRITICAL" >> $GITHUB_ENV
         echo "FINAL_HIGH=$ACTUAL_HIGH" >> $GITHUB_ENV
+        echo "FINAL_MEDIUM=$ACTUAL_MEDIUM" >> $GITHUB_ENV
+        echo "FINAL_LOW=$ACTUAL_LOW" >> $GITHUB_ENV
         
         # Verificar reglas de bloqueo usando datos reales
         SHOULD_BLOCK=false
@@ -940,6 +947,12 @@ runs:
           echo "⚠️ Política: Bloqueo por altas activado (block-on-high: true)"
         fi
         
+        if [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" = "true" ]; then
+          SHOULD_BLOCK=true
+          BLOCK_REASONS="$BLOCK_REASONS\n• 🟡 $((ACTUAL_MEDIUM + ACTUAL_LOW)) vulnerabilidades medias/bajas requieren aprobación"
+          echo "⚠️ Política: Bloqueo por aprobación pendiente activado (require-approval-on-medium: true)"
+        fi
+
         echo ""
         
         if [ "$SHOULD_BLOCK" = "true" ]; then
@@ -965,11 +978,15 @@ runs:
           echo "✅ DECISIÓN: MERGE PERMITIDO"
           echo "═══════════════════════════"
           echo ""
-          if [ "$ACTUAL_SECRETS" -gt 0 ] || [ "$ACTUAL_CRITICAL" -gt 0 ] || [ "$ACTUAL_HIGH" -gt 0 ]; then
+          if [ "$ACTUAL_SECRETS" -gt 0 ] || [ "$ACTUAL_CRITICAL" -gt 0 ] || [ "$ACTUAL_HIGH" -gt 0 ] || [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ]; then
             echo "ℹ️ Se detectaron problemas pero las políticas permiten continuar:"
             echo "  • block-on-secrets: ${{ inputs.block-on-secrets }}"
             echo "  • block-on-critical: ${{ inputs.block-on-critical }}"
             echo "  • block-on-high: ${{ inputs.block-on-high }}"
+            echo "  • require-approval-on-medium: ${{ inputs.require-approval-on-medium }}"
+            if [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" != "true" ]; then
+              echo "  • Medias/bajas detectadas: $((ACTUAL_MEDIUM + ACTUAL_LOW)); aprobación no requerida, se permite continuar"
+            fi
             echo ""
             echo "⚠️ Recomendación: Revisar y corregir los problemas encontrados."
           else
