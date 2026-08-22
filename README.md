@@ -1,5 +1,22 @@
 c# 🔒 Security Pipeline Colombia - DEMO (No instalar)
 
+> ⚠️ **AVISO CRÍTICO PARA USUARIOS DE GITHUB MARKETPLACE:**
+> 
+> **El código que GitHub Marketplace muestra abajo está INCOMPLETO y CAUSARÁ ERROR:**
+> ```
+> - name: Security Pipeline Colombia
+> uses: fabios21/security-pipeline-colombia@v1.1.2
+> ```
+> 
+> **❌ Este código solo es UN PASO, no un workflow completo.**
+> 
+> **✅ PARA INSTALAR CORRECTAMENTE:**
+> 1. **NO copies el código del Marketplace**
+> 2. **USA el código completo de la sección "INSTALACIÓN CORRECTA" más abajo**
+> 3. **O copia el archivo `examples/basic-usage.yml`**
+
+---
+
 > ⚠️ **AVISO IMPORTANTE:** Este es un proyecto DEMO de demostración para fines educativos y de aprendizaje. **NO debe ser instalado en producción** o usado en proyectos reales. Es solo un ejemplo de cómo podría implementarse un pipeline de seguridad para GitHub Actions.
 
 [![Security Pipeline Colombia](https://img.shields.io/badge/DEMO_Solo_para_aprendizaje-red)](https://github.com/marketplace/actions/security-pipeline-colombia)
@@ -32,7 +49,71 @@ c# 🔒 Security Pipeline Colombia - DEMO (No instalar)
 - **Ejecución selectiva:** Solo en PRs hacia ramas principales
 - **Caching inteligente:** Reduce tiempo de ejecución y consumo de recursos
 
-## 🚀 INFORMACIÓN DE DEMO - No instalar
+## �️ INSTALACIÓN CORRECTA (DEMO educativo)
+
+> ⚠️ **NO uses el código que GitHub Marketplace muestra arriba. Está incompleto.**
+
+### ✅ **Código CORRECTO - Copia TODO esto:**
+
+**Archivo:** `.github/workflows/security.yml`
+
+```yaml
+name: 🔒 Security Pipeline Colombia - DEMO
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  security-scan:
+    name: 🛡️ Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Run Security Pipeline Colombia (DEMO)
+      id: security
+      uses: fabios21/security-pipeline-colombia@v1.1.2
+      with:
+        compliance-level: 'standard'
+        timezone: 'America/Bogota'
+        report-language: 'es_CO'
+        block-on-secrets: true
+        block-on-critical: true
+        block-on-high: true
+        require-approval-on-medium: true
+        
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          visual-report.txt
+          security-report-*.html
+          security-report.*.md
+        retention-days: 7
+```
+
+### 📋 **Pasos de instalación:**
+
+1. **Crear directorio:** `mkdir -p .github/workflows`
+2. **Crear archivo:** `.github/workflows/security.yml`
+3. **Copiar TODO el código YAML de arriba**
+4. **Commit y push**
+
+**¿Error "A sequence was not expected"?** → Usaste el código incompleto del Marketplace.
+
+## �🚀 INFORMACIÓN DE DEMO - No instalar
 
 > 🚫 **ESTE ES UN PROYECTO DEMO - NO INSTALAR**
 >

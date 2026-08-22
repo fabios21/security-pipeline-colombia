@@ -1,10 +1,18 @@
 # ⚡ QUICK START - Instalación Correcta
 
-## 🚨 ADVERTENCIA
+## 🚨 ADVERTENCIA CRÍTICA
 
-**El código que GitHub Marketplace muestra está INCOMPLETO.**
+**El código que GitHub Marketplace muestra es INCOMPLETO y CAUSARÁ ERROR:**
 
-No copies y pegues directamente. Sigue esta guía en su lugar.
+```yaml
+❌ INCORRECTO (del Marketplace):
+- name: Security Pipeline Colombia
+uses: fabios21/security-pipeline-colombia@v1.1.2
+```
+
+**Error que causa:** `"A sequence was not expected (Line: 1, Col: 1)"`
+
+**¿Por qué falla?** Ese código es solo UN PASO, no un workflow completo.
 
 ---
 
