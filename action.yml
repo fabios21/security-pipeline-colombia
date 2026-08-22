@@ -1,5 +1,5 @@
-name: 'Security Pipeline Colombia'
-description: '🔒 Pipeline de seguridad automatizado para GitHub Actions con enfoque en mejores prácticas de seguridad'
+name: 'Security Pipeline Colombia (no install)'
+description: '🔒 DEMO EDUCATIVO - NO INSTALAR. Pipeline de seguridad para aprendizaje. ⚠️ Código incompleto en Marketplace. Ve a README.md para workflow completo'
 author: 'Security Pipeline Colombia Team'
 
 branding:

@@ -1,12 +1,14 @@
-# 🔒 Security Pipeline Colombia - GitHub Action
+c# 🔒 Security Pipeline Colombia - DEMO (No instalar)
 
-[![Security Pipeline Colombia](https://img.shields.io/badge/GitHub_Marketplace-Security_Pipeline_Colombia-blue)](https://github.com/marketplace/actions/security-pipeline-colombia)
+> ⚠️ **AVISO IMPORTANTE:** Este es un proyecto DEMO de demostración para fines educativos y de aprendizaje. **NO debe ser instalado en producción** o usado en proyectos reales. Es solo un ejemplo de cómo podría implementarse un pipeline de seguridad para GitHub Actions.
+
+[![Security Pipeline Colombia](https://img.shields.io/badge/DEMO_Solo_para_aprendizaje-red)](https://github.com/marketplace/actions/security-pipeline-colombia)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Compatible-blue)](https://github.com/features/actions)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org)
-[![Release](https://img.shields.io/github/v/release/tu-usuario/security-pipeline-colombia)](https://github.com/tu-usuario/security-pipeline-colombia/releases)
+[![Demo Version](https://img.shields.io/badge/Version-DEMO_1.0.0-yellow)](https://github.com/tu-usuario/security-pipeline-colombia/releases)
 
-**Pipeline de seguridad automatizado para GitHub Actions adaptado al contexto colombiano**, disponible en GitHub Marketplace. Con enfoque en baja fricción para desarrolladores, cumplimiento de Ley 1581 de protección de datos, y generación de reportes en español para stakeholders no técnicos.
+**DEMO de pipeline de seguridad automatizado para GitHub Actions adaptado al contexto colombiano**, creado para fines educativos y de aprendizaje. Este proyecto muestra cómo podría implementarse un pipeline de seguridad, con enfoque en baja fricción para desarrolladores, cumplimiento de Ley 1581 de protección de datos, y generación de reportes en español para stakeholders no técnicos. **Este es solo un ejemplo y no debe usarse en producción.**
 
 ## 🎯 Características Principales
 
@@ -30,31 +32,84 @@
 - **Ejecución selectiva:** Solo en PRs hacia ramas principales
 - **Caching inteligente:** Reduce tiempo de ejecución y consumo de recursos
 
-## 🚀 Instalación desde GitHub Marketplace
+## 🚀 INFORMACIÓN DE DEMO - No instalar
 
-### Opción 1: Instalación con un clic (Recomendado)
-1. Visita [GitHub Marketplace - Security Pipeline Colombia](https://github.com/marketplace/actions/security-pipeline-colombia)
-2. Haz clic en **"Install"**
-3. Selecciona los repositorios donde quieres usar la acción
-4. ¡Listo! Ya puedes usar la acción en tus workflows
+> 🚫 **ESTE ES UN PROYECTO DEMO - NO INSTALAR**
+>
+> **⚠️ Advertencia importante:** Este proyecto fue creado exclusivamente para fines educativos y de aprendizaje. No es una herramienta real disponible en GitHub Marketplace y **no debe ser instalado o usado en producción**.
 
-### Opción 2: Uso manual en workflow
+## 🛠️ ADVERTENCIA CRÍTICA SOBRE INSTALACIÓN
+
+> ⚠️ **PROBLEMA CONOCIDO:** El código de instalación que GitHub Marketplace muestra automáticamente está **INCOMPLETO** y **CAUSA ERRORES**.
+>
+> GitHub Marketplace genera automáticamente este snippet **INCORRECTO**:
+> ```yaml
+> - name: Security Pipeline Colombia
+> uses: fabios21/security-pipeline-colombia@v1.1.0
+> with:
+>   # Parámetros...
+> ```
+>
+> **¿POR QUÉ FALLA?**
+> 1. ❌ **Falta la estructura completa** del workflow
+> 2. ❌ **Comienza con `- name:`** en lugar de `name:` 
+> 3. ❌ **No incluye el step de checkout**
+> 4. ❌ **No tiene triggers (`on:`)** ni estructura `jobs:`
+> 5. ❌ **Causa error:** "A sequence was not expected (Line: 1, Col: 1)"
+
+### ✅ **CÓDIGO CORRECTO PARA APRENDIZAJE:**
+Si quieres aprender cómo se usa correctamente (solo para fines educativos):
+
 ```yaml
-- name: Security Pipeline Colombia
-  uses: tu-usuario/security-pipeline-colombia@v1.0.4
-  with:
-    compliance-level: 'ley_1581'
-    report-language: 'es_CO'
-    block-on-secrets: true
-    block-on-critical: true
+name: 🔒 Security Pipeline Colombia - DEMO (Solo aprendizaje)
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  security-scan:
+    name: 🛡️ Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Run Security Pipeline Colombia (DEMO)
+      id: security
+      uses: fabios21/security-pipeline-colombia@v1.1.0
+      with:
+        compliance-level: 'standard'
+        timezone: 'America/Bogota'
+        report-language: 'es_CO'
+        block-on-secrets: true
+        block-on-critical: true
+        block-on-high: true
+        require-approval-on-medium: true
 ```
 
-### Opción 3: Instalación avanzada
-Para configuraciones personalizadas o instalación en múltiples repositorios, usa nuestro script de instalación:
-```bash
-# Usar script de instalación automática
-curl -s https://raw.githubusercontent.com/tu-usuario/security-pipeline-colombia/main/setup_auto.py | python3
-```
+> **⚠️ RECUERDA:** Este es solo un DEMO para aprendizaje. **NO lo instales en repositorios reales**.
+
+### Objetivos educativos de este demo:
+> 1. **Aprender sobre pipelines de seguridad** en GitHub Actions
+> 2. **Entender cómo funcionan** las herramientas SAST y secret scanning
+> 3. **Ver ejemplos** de configuración de `.gitleaks.toml` y `.semgrep.yml`
+> 4. **Estudiar cómo generar reportes** de seguridad automatizados
+> 5. **Analizar la estructura** de un GitHub Action complejo
+>
+> ### 🎓 Uso recomendado para estudiantes:
+> 1. **Explorar el código fuente** para entender la arquitectura
+> 2. **Revisar los scripts de Python** para aprender sobre automatización
+> 3. **Estudiar los workflows de GitHub Actions** como ejemplos educativos
+> 4. **Adaptar conceptos** a tus propios proyectos de aprendizaje
+> 5. **No ejecutar** en entornos de producción
+>
+> **📚 Este demo forma parte de un proyecto educativo del SENA (Servicio Nacional de Aprendizaje)**
 
 ## 📁 Estructura del Proyecto
 
@@ -328,95 +383,79 @@ Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE
 *"La seguridad no es un producto, es un proceso" - Bruce Schneier*
 
 
-## 📦 Publicación en GitHub Marketplace
+## 📦 PROYECTO DEMO EDUCATIVO
 
-### Para Usuarios:
-- **Instalación fácil**: Un clic desde Marketplace
-- **Actualizaciones automáticas**: Siempre tienes la última versión
-- **Soporte centralizado**: Issues y documentación en un solo lugar
-- **Confianza**: Acciones verificadas por GitHub
+> 🚫 **NO DISPONIBLE EN MARKETPLACE - PROYECTO DE APRENDIZAJE**
 
-### Para Desarrolladores:
-Para contribuir o publicar nuevas versiones:
+### 🎯 Propósito Educativo de este Demo:
+Este proyecto fue creado como **material de aprendizaje** para estudiantes de desarrollo de software y seguridad informática. Su objetivo es:
 
-1. **Crear release**:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+1. **Mostrar cómo se estructura** un pipeline de seguridad en GitHub Actions
+2. **Proporcionar ejemplos reales** de configuración de herramientas SAST y secret scanning
+3. **Enseñar mejores prácticas** de DevSecOps adaptadas al contexto colombiano
+4. **Servir como referencia** para proyectos educativos y de investigación
 
-2. **Publicar en Marketplace**:
-   - Ir a Releases en GitHub
-   - Click "Edit" en el release
-   - Marcar "Publish this Action to GitHub Marketplace"
-   - Completar formulario requerido
+### 🔍 Qué puedes aprender de este demo:
+- **GitHub Actions**: Cómo crear workflows complejos
+- **SAST**: Configuración de Semgrep para análisis estático de código
+- **Secret Scanning**: Uso de gitleaks con reglas personalizadas
+- **Generación de reportes**: Creación de reportes automatizados en español
+- **Automatización**: Scripts en Python para validación y generación de reportes
 
-3. **Mantener actualizado**:
-   - Actualizar CHANGELOG.md
-   - Incrementar versión en package.json
-   - Ejecutar tests antes de publicar
+### 📚 Cómo usar este demo para aprender:
+1. **Explora el código fuente** para entender la arquitectura
+2. **Estudia los workflows** en `.github/workflows/`
+3. **Analiza los scripts de Python** en `.github/scripts/`
+4. **Examina las configuraciones** de seguridad (`.gitleaks.toml`, `.semgrep.yml`)
+5. **Adapta conceptos** a tus propios proyectos de aprendizaje
 
-### Requisitos del Marketplace:
-- ✅ Licencia MIT
-- ✅ README completo
-- ✅ Action.yml correctamente configurado
-- ✅ Releases versionados
-- ✅ Tests automatizados
-- ✅ Documentación clara
+### ⚠️ Advertencias importantes:
+- **No instalar**: Este demo no está disponible en GitHub Marketplace
+- **No usar en producción**: No está diseñado para uso real
+- **Solo para aprendizaje**: Su propósito es exclusivamente educativo
+- **Proyecto SENA**: Desarrollado como parte de actividades de aprendizaje del Servicio Nacional de Aprendizaje
 
 ---
 
-## 🏪 Disponible en GitHub Marketplace
+## 🏫 Contexto Educativo
 
-[![Instalar desde GitHub Marketplace](https://img.shields.io/badge/Instalar_desde_Marketplace-Instalar_ahora-blue?style=for-the-badge&logo=github)](https://github.com/marketplace/actions/security-pipeline-colombia)
+### Institución:
+- **SENA** - Servicio Nacional de Aprendizaje de Colombia
 
-**Beneficios de usar la versión de Marketplace:**
-- ✅ Instalación con un clic
-- ✅ Actualizaciones automáticas
-- ✅ Soporte garantizado
-- ✅ Integración nativa con GitHub Actions
-- ✅ Mayor visibilidad y adopción
+### Objetivos de Aprendizaje:
+- Entender pipelines de seguridad en entornos CI/CD
+- Aprender sobre herramientas SAST y secret scanning
+- Desarrollar habilidades en automatización de seguridad
+- Aplicar conceptos de DevSecOps en contextos reales
 
----
-
-## 📞 Soporte y Comunidad
-
-### Canales Oficiales:
-- **Marketplace**: [GitHub Marketplace Listing](https://github.com/marketplace/actions/security-pipeline-colombia)
-- **Documentación**: [README Completo](README.md)
-- **Issues**: [Reportar Bugs](https://github.com/tu-usuario/security-pipeline-colombia/issues)
-- **Discusiones**: [Preguntas y Ayuda](https://github.com/tu-usuario/security-pipeline-colombia/discussions)
-
-### Para Empresas:
-- **Soporte empresarial**: Disponible para organizaciones
-- **Customización**: Adaptaciones específicas para tu empresa
-- **Capacitación**: Entrenamiento en seguridad DevSecOps
-- **Consultoría**: Implementación y optimización
+### Herramientas Utilizadas (con fines educativos):
+- **GitHub Actions** - Para aprendizaje de CI/CD
+- **gitleaks** - Para entender detección de secretos
+- **Semgrep** - Para aprender análisis estático de código
+- **Python** - Para desarrollar scripts de automatización
 
 ---
 
-## 🎖️ Reconocimientos y Partners
+## 🎓 Recursos para Estudiantes
 
-### Herramientas Utilizadas:
-- **GitHub Actions** - Plataforma de CI/CD
-- **gitleaks** - Detección de secretos
-- **Semgrep** - Análisis estático de código
-- **Python** - Scripts y automatización
+### Para continuar tu aprendizaje:
+1. **Documentación oficial** de las herramientas:
+   - [GitHub Actions Documentation](https://docs.github.com/en/actions)
+   - [Semgrep Documentation](https://semgrep.dev/docs/)
+   - [gitleaks Documentation](https://github.com/gitleaks/gitleaks)
 
-### Partners Institucionales:
-- **SENA** - Servicio Nacional de Aprendizaje
-- **Comunidad DevSecOps Colombia**
-- **Superintendencia de Industria y Comercio (SIC)**
+2. **Cursos recomendados**:
+   - DevSecOps Fundamentals
+   - GitHub Actions for CI/CD
+   - Application Security Testing
 
-### Colaboradores:
-Agradecemos a todos los colaboradores que han hecho posible este proyecto. ¡Tu contribución es valiosa!
-
-[![Contribuidores](https://contrib.rocks/image?repo=tu-usuario/security-pipeline-colombia)](https://github.com/tu-usuario/security-pipeline-colombia/graphs/contributors)
+3. **Comunidades**:
+   - Comunidad DevSecOps Colombia
+   - GitHub Community
+   - Foros de seguridad informática
 
 ---
 
-**¿Listo para mejorar la seguridad de tus aplicaciones con un clic?** 🚀
+**🎯 Este demo es parte de un esfuerzo educativo para formar desarrolladores con habilidades en seguridad** 🇨🇴🔒
 
-[![Instalar Ahora](https://img.shields.io/badge/Instalar_Ahora-GitHub_Marketplace-6e40c9?style=for-the-badge&logo=github)](https://github.com/marketplace/actions/security-pipeline-colombia)
-
-*"La seguridad en el desarrollo de software no es un lujo, es una necesidad" - Adaptado para Colombia* 🇨🇴🔒
+*"La educación es el arma más poderosa que puedes usar para cambiar el mundo" - Nelson Mandela*
