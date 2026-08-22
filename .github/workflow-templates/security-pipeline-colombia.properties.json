@@ -1,8 +1,0 @@
-{
-    "name": "Security Pipeline Colombia (DEMO)",
-    "description": "DEMO educativo: Pipeline de seguridad automatizado para GitHub Actions",
-    "iconName": "shield",
-    "categories": [
-        "security"
-    ]
-}

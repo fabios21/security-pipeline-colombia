@@ -1,5 +1,5 @@
-name: 'Security Pipeline Colombia'
-description: 'DEMO - Análisis de seguridad (requiere checkout previo). Ver README para workflow completo'
+name: 'Security Pipeline Colombia (no install)'
+description: '🔒 Pipeline de seguridad automatizado para GitHub Actions con enfoque en mejores prácticas de seguridad'
 author: 'Security Pipeline Colombia Team'
 
 branding:
@@ -133,6 +133,12 @@ runs:
       with:
         node-version: '22.x'
         
+    # Paso 1: Checkout del código
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     # Paso 2: Configurar entorno
     - name: Setup environment
       shell: bash
