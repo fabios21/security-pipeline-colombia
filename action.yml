@@ -142,32 +142,46 @@ runs:
     # Paso 2: Configurar entorno
     - name: Setup environment
       shell: bash
+      env:
+        ACTION_CONFIG_PATH: ${{ inputs['config-path'] }}
+        ACTION_COMPLIANCE_LEVEL: ${{ inputs['compliance-level'] }}
+        ACTION_TIMEZONE: ${{ inputs.timezone }}
+        ACTION_REPORT_LANGUAGE: ${{ inputs['report-language'] }}
       run: |
         echo "🔒 Security Pipeline Colombia - Iniciando"
-        echo "📝 Configuración: ${{ inputs.config-path }}"
-        echo "🔒 Nivel de seguridad: ${{ inputs.compliance-level }}"
-        echo "🌐 Zona horaria: ${{ inputs.timezone }}"
-        echo "📄 Idioma reportes: ${{ inputs.report-language }}"
+        CONFIG_PATH_INPUT="${ACTION_CONFIG_PATH:-.gitleaks.toml}"
+        COMPLIANCE_LEVEL_INPUT="${ACTION_COMPLIANCE_LEVEL:-standard}"
+        TIMEZONE_INPUT="${ACTION_TIMEZONE:-America/Bogota}"
+        REPORT_LANGUAGE_INPUT="${ACTION_REPORT_LANGUAGE:-es_CO}"
+        echo "📝 Configuración: $CONFIG_PATH_INPUT"
+        echo "🔒 Nivel de seguridad: $COMPLIANCE_LEVEL_INPUT"
+        echo "🌐 Zona horaria: $TIMEZONE_INPUT"
+        echo "📄 Idioma reportes: $REPORT_LANGUAGE_INPUT"
         
         # Configurar variables de entorno - usar locale compatible con Linux
-        echo "TIMEZONE=${{ inputs.timezone }}" >> $GITHUB_ENV
+        echo "TIMEZONE=$TIMEZONE_INPUT" >> $GITHUB_ENV
         
         # Usar locale compatible y generar locale si no existe
-        if [[ "${{ inputs.report-language }}" == "es_CO" ]] || [[ "${{ inputs.report-language }}" == "es" ]]; then
+        if [[ "$REPORT_LANGUAGE_INPUT" == "es_CO" ]] || [[ "$REPORT_LANGUAGE_INPUT" == "es" ]]; then
           # Generar locale español si no existe
           sudo locale-gen es_ES.UTF-8 || true
           sudo update-locale LANG=es_ES.UTF-8 LC_ALL=es_ES.UTF-8 || true
           echo "LANG=es_ES.UTF-8" >> $GITHUB_ENV
           echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV  # Usar C.UTF-8 para evitar warnings
           echo "REPORT_LANG=es_CO" >> $GITHUB_ENV
-        else
-          # Para otros idiomas, usar C.UTF-8 para compatibilidad
-          echo "LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
+        elif [[ "$REPORT_LANGUAGE_INPUT" == "en" ]]; then
+          # Para inglés, usar C.UTF-8 y conservar el idioma solicitado
+          echo "LANG=C.UTF-8" >> $GITHUB_ENV
           echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV
-          echo "REPORT_LANG=${{ inputs.report-language }}" >> $GITHUB_ENV
+          echo "REPORT_LANG=en" >> $GITHUB_ENV
+        else
+          echo "⚠️ Idioma no válido o vacío; se utilizará es_CO"
+          echo "LANG=es_ES.UTF-8" >> $GITHUB_ENV
+          echo "LC_ALL=C.UTF-8" >> $GITHUB_ENV
+          echo "REPORT_LANG=es_CO" >> $GITHUB_ENV
         fi
         
-        echo "COMPLIANCE_LEVEL=${{ inputs.compliance-level }}" >> $GITHUB_ENV
+        echo "COMPLIANCE_LEVEL=$COMPLIANCE_LEVEL_INPUT" >> $GITHUB_ENV
         
     # Paso 3: Setup de herramientas
     - name: Setup security tools
@@ -311,6 +325,8 @@ runs:
     # Paso 4: Instalar scripts y configuraciones
     - name: Install pipeline files
       shell: bash
+      env:
+        ACTION_CONFIG_PATH: ${{ inputs['config-path'] }}
       run: |
         echo "📁 Instalando archivos del pipeline..."
         
@@ -331,7 +347,7 @@ runs:
         cp "$GITHUB_ACTION_PATH"/security-report-template.md . || true
         
         # Copiar configuración personalizada si se proporciona y es diferente del default
-        CONFIG_PATH="${{ inputs.config-path }}"
+        CONFIG_PATH="${ACTION_CONFIG_PATH:-.gitleaks.toml}"
         if [ -f "$CONFIG_PATH" ] && [ "$CONFIG_PATH" != ".gitleaks.toml" ]; then
           echo "Usando configuración personalizada: $CONFIG_PATH"
           cp "$CONFIG_PATH" .gitleaks.toml
@@ -350,6 +366,8 @@ runs:
     - name: Run secret scan with gitleaks
       id: secret-scan
       shell: bash
+      env:
+        ACTION_SCAN_MODE: ${{ inputs['scan-mode'] }}
       run: |
         echo "🔍 Ejecutando escaneo de secretos..."
         
@@ -368,7 +386,7 @@ runs:
         GITLEAKS_EXIT_CODE=0
         
         # Determinar modo de escaneo según configuración
-        SCAN_MODE="${{ inputs.scan-mode }}"
+        SCAN_MODE="${ACTION_SCAN_MODE:-pr-only}"
         echo "🔍 Modo de escaneo configurado: $SCAN_MODE"
         
         case $SCAN_MODE in
@@ -505,6 +523,8 @@ runs:
     - name: Run SAST scan with semgrep
       id: sast-scan
       shell: bash
+      env:
+        ACTION_SEMGREP_CONFIG: ${{ inputs['semgrep-config'] }}
       run: |
         echo "🔍 Ejecutando análisis SAST..."
         
@@ -519,7 +539,10 @@ runs:
         
         # Resolver y validar la configuración antes de escanear. Un error de reglas
         # debe mostrarse en el log y fallar, nunca convertirse en cero hallazgos.
-        SEMGREP_CONFIG="${{ inputs.semgrep-config }}"
+        SEMGREP_CONFIG="${ACTION_SEMGREP_CONFIG:-p/owasp-top-ten}"
+        if [ -z "${ACTION_SEMGREP_CONFIG:-}" ]; then
+          echo "⚠️ Input semgrep-config vacío; se utilizará la configuración predeterminada p/owasp-top-ten"
+        fi
         echo "📄 Configuración Semgrep solicitada: $SEMGREP_CONFIG"
         if [[ "$SEMGREP_CONFIG" != p/* ]] && [ ! -f "$SEMGREP_CONFIG" ]; then
           echo "❌ No se encontró la configuración Semgrep: $SEMGREP_CONFIG"
@@ -611,6 +634,8 @@ runs:
     - name: Validate security results
       id: validation
       shell: bash
+      env:
+        ACTION_REQUIRE_APPROVAL_MEDIUM: ${{ inputs['require-approval-on-medium'] }}
       run: |
         echo "✅ Ejecutando validación de seguridad..."
         
@@ -662,7 +687,7 @@ runs:
         fi
         
         # Verificar si requiere aprobación
-        if [ "${{ steps.sast-scan.outputs.medium_count }}" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" = "true" ]; then
+        if [ "${{ steps.sast-scan.outputs.medium_count }}" -gt 0 ] && [ "${ACTION_REQUIRE_APPROVAL_MEDIUM:-true}" = "true" ]; then
           echo "⚠️ Aprobación requerida: Se detectaron vulnerabilidades medias"
           # No salimos con error, solo marcamos que requiere aprobación
         fi
@@ -671,6 +696,8 @@ runs:
     - name: Check security compliance
       id: compliance-check
       shell: bash
+      env:
+        ACTION_COMPLIANCE_LEVEL: ${{ inputs['compliance-level'] }}
       run: |
         echo "🔒 Verificando cumplimiento de seguridad..."
         
@@ -680,7 +707,7 @@ runs:
         if [ "${{ steps.secret-scan.outputs.has_secrets }}" = "true" ]; then
           COMPLIANCE_STATUS="non_compliant"
           echo "⚠️ Incumplimiento detectado: Credenciales sensibles expuestas"
-        elif [ "${{ inputs.compliance-level }}" = "standard" ] || [ "${{ inputs.compliance-level }}" = "strict" ]; then
+        elif [ "${ACTION_COMPLIANCE_LEVEL:-standard}" = "standard" ] || [ "${ACTION_COMPLIANCE_LEVEL:-standard}" = "strict" ]; then
           # Verificaciones adicionales específicas de seguridad
           echo "🔍 Verificando controles específicos de seguridad..."
           COMPLIANCE_STATUS="compliant"
@@ -694,18 +721,27 @@ runs:
       id: generate-report
       if: always()
       shell: bash
+      env:
+        ACTION_REPORT_LANGUAGE: ${{ inputs['report-language'] }}
+        ACTION_REPORT_FORMATS: ${{ inputs['report-formats'] }}
       run: |
         echo "📄 Generando reporte de seguridad..."
         
         source .github/scripts/sanitize_count.sh 2>/dev/null || sanitize_count() { local v="${1:-0}"; v=$(printf '%s\n' "$v" | head -1 | tr -d '[:space:]'); [[ "$v" =~ ^[0-9]+$ ]] && echo "$v" || echo 0; }
         
-        # Determinar formatos
-        IFS=',' read -ra FORMATS <<< "${{ inputs.report-formats }}"
+        # Determinar formatos; HTML siempre se añade al final aunque el caller lo omita.
+        REPORT_FORMATS="${ACTION_REPORT_FORMATS:-html,markdown}"
+        IFS=',' read -ra FORMATS <<< "$REPORT_FORMATS"
         
         REPORT_URLS=""
         
-        # Usar el locale configurado en el entorno; usar el input como fallback.
-        REPORT_LANG="${REPORT_LANG:-${{ inputs.report-language }}}"
+        # Usar el idioma persistido por Setup environment, con fallback seguro.
+        REPORT_LANG="${REPORT_LANG:-${ACTION_REPORT_LANGUAGE:-es_CO}}"
+        case "$REPORT_LANG" in
+          es|es_CO) REPORT_LANG="es_CO" ;;
+          en) ;;
+          *) echo "⚠️ Idioma de reporte inválido o vacío; se utilizará es_CO"; REPORT_LANG="es_CO" ;;
+        esac
         HTML_REPORT="security-report-$REPORT_LANG.html"
         
         # Verificar archivos de entrada
@@ -721,7 +757,10 @@ runs:
         # Asegurar que los archivos existan
         [ -f "$SECRETS_FILE" ] || echo '{"findings": []}' > "$SECRETS_FILE"
         [ -f "$SAST_FILE" ] || echo '{"runs": []}' > "$SAST_FILE"
-        [ -f "$VALIDATION_FILE" ] || echo '{"status": "error", "summary": {"total_secrets": 0, "total_vulnerabilities": 0, "critical_vulnerabilities": 0, "high_vulnerabilities": 0, "medium_vulnerabilities": 0, "low_vulnerabilities": 0}}' > "$VALIDATION_FILE"
+        if [ ! -s "$VALIDATION_FILE" ] || ! jq -e '.summary and .compliance' "$VALIDATION_FILE" >/dev/null 2>&1; then
+          echo "⚠️ No existe un resultado de validación confiable; se registrará el análisis como FALLIDO"
+          printf '%s\n' '{"status":"failed","error":"El análisis de seguridad no produjo resultados confiables. Revise los logs del workflow.","secret_findings":[],"vulnerability_findings":[],"summary":{"total_secrets":0,"total_vulnerabilities":0,"critical_vulnerabilities":0,"high_vulnerabilities":0,"medium_vulnerabilities":0,"low_vulnerabilities":0},"compliance":{"ley_1581":{"data_leakage_detected":false,"requires_notification":false,"recommendations":[]}}}' > "$VALIDATION_FILE"
+        fi
         
         # Verificar que los scripts existan
         echo "🔍 Verificando scripts..."
@@ -791,7 +830,7 @@ runs:
                   --validation "$VALIDATION_FILE" \
                   --output security-report-$REPORT_LANG.html \
                   --format html \
-                  --language $REPORT_LANG || {
+                  --language "$REPORT_LANG" || {
                   echo "⚠️ Error generando reporte HTML, creando uno básico..."
                   # Crear HTML básico línea por línea (más seguro para YAML)
                   echo "<!DOCTYPE html>" > "security-report-$REPORT_LANG.html"
@@ -831,7 +870,7 @@ runs:
                   --validation "$VALIDATION_FILE" \
                   --output security-report-$REPORT_LANG.md \
                   --format markdown \
-                  --language $REPORT_LANG || {
+                  --language "$REPORT_LANG" || {
                   echo "⚠️ Error generando reporte Markdown, creando uno básico..."
                   # Crear Markdown básico línea por línea
                   echo "# 🔒 Reporte de Seguridad Informática" > "security-report-$REPORT_LANG.md"
@@ -917,7 +956,7 @@ runs:
       shell: bash
       run: |
         echo "📤 Preparando artifacts de seguridad..."
-        REPORT_LANG="${{ env.REPORT_LANG }}"
+        REPORT_LANG="${REPORT_LANG:-es_CO}"
         
         # Listar archivos que se van a incluir en artifacts
         echo "📄 Archivos generados:"
@@ -947,7 +986,13 @@ runs:
         
     # Paso 11: Verificación final de bloqueo
     - name: Final security validation
+      if: always()
       shell: bash
+      env:
+        ACTION_BLOCK_SECRETS: ${{ inputs['block-on-secrets'] }}
+        ACTION_BLOCK_CRITICAL: ${{ inputs['block-on-critical'] }}
+        ACTION_BLOCK_HIGH: ${{ inputs['block-on-high'] }}
+        ACTION_REQUIRE_APPROVAL_MEDIUM: ${{ inputs['require-approval-on-medium'] }}
       run: |
         echo "🔍 Verificación final de políticas de seguridad..."
         echo ""
@@ -959,8 +1004,15 @@ runs:
         ACTUAL_HIGH="0"
         ACTUAL_MEDIUM="0"
         ACTUAL_LOW="0"
+
+        # Un fallo del scanner nunca puede transformarse en una aprobación.
+        if [ "${{ steps.sast-scan.outcome }}" != "success" ] || [ "${{ steps.secret-scan.outcome }}" != "success" ]; then
+          echo "🚫 DECISIÓN: MERGE BLOQUEADO"
+          echo "❌ Uno o más scanners no terminaron correctamente; los resultados no son confiables."
+          echo "SHOULD_FAIL=true" >> $GITHUB_ENV
+          exit 1
+        fi
         
-        if [ -f "gitleaks-report.json" ]; then
           ACTUAL_SECRETS=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
           if [ "$ACTUAL_SECRETS" = "0" ]; then
             ACTUAL_SECRETS=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
@@ -993,25 +1045,25 @@ runs:
         SHOULD_BLOCK=false
         BLOCK_REASONS=""
         
-        if [ "$ACTUAL_SECRETS" -gt 0 ] && [ "${{ inputs.block-on-secrets }}" = "true" ]; then
+        if [ "$ACTUAL_SECRETS" -gt 0 ] && [ "${ACTION_BLOCK_SECRETS:-true}" = "true" ]; then
           SHOULD_BLOCK=true
           BLOCK_REASONS="$BLOCK_REASONS\n• 🔑 $ACTUAL_SECRETS secretos expuestos detectados"
           echo "⚠️ Política: Bloqueo por secretos activado (block-on-secrets: true)"
         fi
         
-        if [ "$ACTUAL_CRITICAL" -gt 0 ] && [ "${{ inputs.block-on-critical }}" = "true" ]; then
+        if [ "$ACTUAL_CRITICAL" -gt 0 ] && [ "${ACTION_BLOCK_CRITICAL:-true}" = "true" ]; then
           SHOULD_BLOCK=true
           BLOCK_REASONS="$BLOCK_REASONS\n• 🔴 $ACTUAL_CRITICAL vulnerabilidades críticas detectadas"
           echo "⚠️ Política: Bloqueo por críticas activado (block-on-critical: true)"
         fi
         
-        if [ "$ACTUAL_HIGH" -gt 0 ] && [ "${{ inputs.block-on-high }}" = "true" ]; then
+        if [ "$ACTUAL_HIGH" -gt 0 ] && [ "${ACTION_BLOCK_HIGH:-true}" = "true" ]; then
           SHOULD_BLOCK=true
           BLOCK_REASONS="$BLOCK_REASONS\n• 🟠 $ACTUAL_HIGH vulnerabilidades altas detectadas"
           echo "⚠️ Política: Bloqueo por altas activado (block-on-high: true)"
         fi
         
-        if [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" = "true" ]; then
+        if [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ] && [ "${ACTION_REQUIRE_APPROVAL_MEDIUM:-true}" = "true" ]; then
           SHOULD_BLOCK=true
           BLOCK_REASONS="$BLOCK_REASONS\n• 🟡 $((ACTUAL_MEDIUM + ACTUAL_LOW)) vulnerabilidades medias/bajas requieren aprobación"
           echo "⚠️ Política: Bloqueo por aprobación pendiente activado (require-approval-on-medium: true)"
@@ -1044,11 +1096,11 @@ runs:
           echo ""
           if [ "$ACTUAL_SECRETS" -gt 0 ] || [ "$ACTUAL_CRITICAL" -gt 0 ] || [ "$ACTUAL_HIGH" -gt 0 ] || [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ]; then
             echo "ℹ️ Se detectaron problemas pero las políticas permiten continuar:"
-            echo "  • block-on-secrets: ${{ inputs.block-on-secrets }}"
-            echo "  • block-on-critical: ${{ inputs.block-on-critical }}"
-            echo "  • block-on-high: ${{ inputs.block-on-high }}"
-            echo "  • require-approval-on-medium: ${{ inputs.require-approval-on-medium }}"
-            if [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ] && [ "${{ inputs.require-approval-on-medium }}" != "true" ]; then
+            echo "  • block-on-secrets: ${ACTION_BLOCK_SECRETS:-true}"
+            echo "  • block-on-critical: ${ACTION_BLOCK_CRITICAL:-true}"
+            echo "  • block-on-high: ${ACTION_BLOCK_HIGH:-true}"
+            echo "  • require-approval-on-medium: ${ACTION_REQUIRE_APPROVAL_MEDIUM:-true}"
+            if [ "$((ACTUAL_MEDIUM + ACTUAL_LOW))" -gt 0 ] && [ "${ACTION_REQUIRE_APPROVAL_MEDIUM:-true}" != "true" ]; then
               echo "  • Medias/bajas detectadas: $((ACTUAL_MEDIUM + ACTUAL_LOW)); aprobación no requerida, se permite continuar"
             fi
             echo ""

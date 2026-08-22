@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.11] - 2026-08-22
+
+### Fixed
+- Se corrigió el transporte de inputs con guion en la action (`semgrep-config`, `report-language` y políticas de bloqueo), usando variables de entorno y valores predeterminados seguros.
+- Un fallo de Semgrep ya no puede convertirse en un reporte aprobado ni en un merge permitido.
+- Los reportes de error siempre conservan el nombre `security-report-es_CO.html` cuando el idioma no llega informado.
+
 ## [1.1.10] - 2026-08-22
 
 ### Fixed

@@ -152,9 +152,10 @@ class VisualSecurityReport:
                 output.append("\n📋 Motivo: Vulnerabilidades de riesgo medio/bajo")
                 
             else:
-                output.append("\n" + "✅" * 20 + " APROBADO " + "✅" * 20)
-                output.append("\n🎉 ¡ANÁLISIS EXITOSO!")
-                output.append("\n🚀 ACCIÓN: MERGE PERMITIDO")
+                # Un estado desconocido o de error nunca puede presentarse como aprobado.
+                output.append("\n" + "❌" * 20 + " BLOQUEADO " + "❌" * 20)
+                output.append("\n🚫 MERGE NO PERMITIDO - ANÁLISIS NO CONFIABLE")
+                output.append("\n📋 Motivo: El análisis no produjo un estado de seguridad válido")
             
             output.append("\n" + "═" * 80)
             
