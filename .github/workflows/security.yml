@@ -1,0 +1,44 @@
+name: 🔒 Security Pipeline Colombia - DEMO
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  security-scan:
+    name: 🛡️ Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Run Security Pipeline Colombia (DEMO)
+      id: security
+      uses: fabios21/security-pipeline-colombia@v1.1.2
+      with:
+        compliance-level: 'standard'
+        timezone: 'America/Bogota'
+        report-language: 'es_CO'
+        block-on-secrets: true
+        block-on-critical: true
+        block-on-high: true
+        require-approval-on-medium: true
+        
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          visual-report.txt
+          security-report-*.html
+          security-report-*.md
+        retention-days: 7
