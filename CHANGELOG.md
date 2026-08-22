@@ -5,6 +5,12 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.9] - 2026-08-22
+
+### Fixed
+- La acción genera siempre un reporte HTML no vacío, incluso cuando el análisis falla, el formato HTML fue omitido o el generador completo presenta un error.
+- La generación de reportes se ejecuta tras fallos previos para conservar evidencia descargable en los artifacts.
+
 ## [1.1.8] - 2026-08-22
 
 ### Fixed

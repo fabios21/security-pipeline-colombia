@@ -692,6 +692,7 @@ runs:
     # Paso 9: Generar reporte
     - name: Generate security report
       id: generate-report
+      if: always()
       shell: bash
       run: |
         echo "📄 Generando reporte de seguridad..."
@@ -703,8 +704,9 @@ runs:
         
         REPORT_URLS=""
         
-        # Usar el locale configurado en el entorno
-        REPORT_LANG="${{ env.REPORT_LANG }}"
+        # Usar el locale configurado en el entorno; usar el input como fallback.
+        REPORT_LANG="${REPORT_LANG:-${{ inputs.report-language }}}"
+        HTML_REPORT="security-report-$REPORT_LANG.html"
         
         # Verificar archivos de entrada
         SECRETS_FILE="gitleaks-report.json"
@@ -869,13 +871,44 @@ runs:
           esac
         done
         
+        # El HTML es obligatorio, aunque report-formats no incluya html o falle el generador.
+        if [ ! -s "$HTML_REPORT" ] && [ -f ".github/scripts/generate_report.py" ] && [ -s "$VALIDATION_FILE" ]; then
+          echo "📄 Generando reporte HTML obligatorio: $HTML_REPORT"
+          python3 .github/scripts/generate_report.py \
+            --validation "$VALIDATION_FILE" \
+            --output "$HTML_REPORT" \
+            --format html \
+            --language "$REPORT_LANG" || true
+        fi
+
+        if [ ! -s "$HTML_REPORT" ] || ! grep -qi '<html' "$HTML_REPORT" 2>/dev/null; then
+          echo "⚠️ Creando HTML de contingencia: $HTML_REPORT"
+          cat > "$HTML_REPORT" <<'HTML'
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Reporte de Seguridad</title></head>
+<body>
+  <h1>Reporte de Seguridad Informática</h1>
+  <p>El reporte completo no pudo generarse. Consulte los archivos JSON, SARIF y los logs del workflow para el detalle del análisis.</p>
+</body>
+</html>
+HTML
+        fi
+
+        if [[ ",$REPORT_URLS," != *",$HTML_REPORT,"* ]]; then
+          REPORT_URLS="$REPORT_URLS,$HTML_REPORT"
+        fi
+
         # Verificar qué archivos se generaron
         echo ""
         echo "📁 Archivos generados:"
         ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
-        
-        # Remover primera coma
+        test -s "$HTML_REPORT"
+        grep -qi '<html' "$HTML_REPORT"
+
+        # Remover primera coma y publicar la URL HTML obligatoria.
         REPORT_URLS=${REPORT_URLS:1}
+        echo "report_url=$HTML_REPORT" >> $GITHUB_OUTPUT
         echo "report_urls=$REPORT_URLS" >> $GITHUB_OUTPUT
         
     # Paso 10: Subir artifacts
