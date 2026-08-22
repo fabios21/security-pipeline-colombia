@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.12] - 2026-08-22
+
+### Fixed
+- El reporte HTML ahora muestra los hallazgos individuales detectados por Gitleaks y Semgrep.
+- Cada hallazgo incluye severidad, regla, archivo, línea, descripción, mensaje del analizador cuando existe y recomendación de corrección.
+- Los secretos se muestran únicamente enmascarados; nunca se renderiza `secret_full`.
+
 ## [1.1.11] - 2026-08-22
 
 ### Fixed

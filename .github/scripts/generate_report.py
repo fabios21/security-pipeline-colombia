@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 import html
 import os
+import sys
 
 
 class SecurityReportGenerator:
@@ -215,6 +216,92 @@ class SecurityReportGenerator:
         
         return recommendations
     
+    @staticmethod
+    def _safe_text(value, default="No disponible") -> str:
+        """Convierte un valor del JSON en texto HTML seguro."""
+        if value is None or value == "":
+            value = default
+        return html.escape(str(value), quote=True)
+
+    @staticmethod
+    def _severity_details(severity: str):
+        """Devuelve una clase y etiqueta controladas para una severidad."""
+        normalized = str(severity or "medium").strip().lower()
+        labels = {
+            "critical": ("critical", "CRÍTICA"),
+            "high": ("high", "ALTA"),
+            "medium": ("medium", "MEDIA"),
+            "low": ("low", "BAJA")
+        }
+        return labels.get(normalized, ("medium", "MEDIA"))
+
+    def _recommendation_for_finding(self, severity: str, is_secret: bool) -> str:
+        """Genera una recomendación accionable para un hallazgo individual."""
+        if is_secret:
+            return (
+                "Revocar y reemplazar la credencial, eliminarla del código e historial "
+                "y trasladarla a un gestor de secretos."
+            )
+
+        normalized = str(severity or "medium").strip().lower()
+        if normalized == "critical":
+            return "Corregir inmediatamente y repetir el análisis antes de permitir el merge."
+        if normalized == "high":
+            return "Corregir antes del merge, aplicar la mitigación indicada y repetir el análisis."
+        if normalized == "medium":
+            return "Corregir antes de aprobar el cambio o documentar formalmente la excepción."
+        return "Planificar la corrección y verificarla en un análisis posterior."
+
+    def _render_detailed_findings(self) -> str:
+        """Renderiza los hallazgos individuales conservando ubicación y contexto."""
+        secrets = self.validation_result.get("secret_findings", []) or []
+        vulnerabilities = self.validation_result.get("vulnerability_findings", []) or []
+        sections = []
+
+        if secrets:
+            cards = []
+            for finding in secrets:
+                severity_class, severity_label = self._severity_details(finding.get("severity", "high"))
+                description = finding.get("description") or "Se detectó una credencial o secreto expuesto."
+                masked_secret = finding.get("secret") or "Valor oculto por seguridad"
+                cards.append(
+                    f'''<article class="severity-card severity-{severity_class} secret-finding">
+    <h3><span class="severity-indicator {severity_class}-indicator">{severity_label}</span> Secreto expuesto</h3>
+    <p><strong>Regla:</strong> {self._safe_text(finding.get("rule"))}</p>
+    <p><strong>Ubicación:</strong> {self._safe_text(finding.get("file"))}:{self._safe_text(finding.get("line"), "0")}</p>
+    <p><strong>Descripción:</strong> {self._safe_text(description)}</p>
+    <p><strong>Valor detectado (enmascarado):</strong> <code>{self._safe_text(masked_secret)}</code></p>
+    <p class="finding-recommendation"><strong>Recomendación:</strong> {self._safe_text(self._recommendation_for_finding("high", True))}</p>
+</article>'''
+                )
+            sections.append("<h3>🔑 Secretos expuestos</h3>" + "".join(cards))
+
+        if vulnerabilities:
+            cards = []
+            for finding in vulnerabilities:
+                severity_class, severity_label = self._severity_details(finding.get("severity", "medium"))
+                description = finding.get("description") or finding.get("message") or "Sin descripción disponible."
+                message = finding.get("message")
+                message_html = (
+                    f'<p><strong>Mensaje del análisis:</strong> {self._safe_text(message)}</p>'
+                    if message and message != description else ""
+                )
+                cards.append(
+                    f'''<article class="severity-card severity-{severity_class}">
+    <h3><span class="severity-indicator {severity_class}-indicator">{severity_label}</span> Vulnerabilidad detectada</h3>
+    <p><strong>Regla:</strong> {self._safe_text(finding.get("rule"))}</p>
+    <p><strong>Ubicación:</strong> {self._safe_text(finding.get("file"))}:{self._safe_text(finding.get("line"), "0")}</p>
+    <p><strong>Descripción:</strong> {self._safe_text(description)}</p>
+    {message_html}
+    <p class="finding-recommendation"><strong>Recomendación:</strong> {self._safe_text(self._recommendation_for_finding(finding.get("severity"), False))}</p>
+</article>'''
+                )
+            sections.append("<h3>🛡️ Vulnerabilidades SAST</h3>" + "".join(cards))
+
+        if not sections:
+            return '<p class="no-findings">No se registraron hallazgos individuales en validation-result.json.</p>'
+        return "".join(sections)
+
     def generate_html_report(self) -> str:
         """Genera reporte en formato HTML"""
         html_template = """<!DOCTYPE html>
@@ -330,6 +417,29 @@ class SecurityReportGenerator:
             background: linear-gradient(to right, #e8f5e9, white);
         }}
         
+        .finding-recommendation {{
+            background: #fffde7;
+            border-left: 4px solid #f9a825;
+            padding: 12px;
+            border-radius: 4px;
+        }}
+
+        .no-findings {{
+            color: #555;
+            font-style: italic;
+        }}
+
+        .severity-card h3 {{
+            margin-top: 0;
+        }}
+
+        code {{
+            background: #f1f1f1;
+            border-radius: 4px;
+            padding: 2px 6px;
+            word-break: break-all;
+        }}
+
         .secret-finding {{
             background: #fff8e1;
             border-left: 6px solid #ff9800;
@@ -508,6 +618,12 @@ class SecurityReportGenerator:
         </table>
     </div>
     
+    <div class="section">
+        <h2>🔎 Hallazgos Detectados</h2>
+        <p>Detalle de cada hallazgo reportado por los analizadores de seguridad.</p>
+        {detailed_findings_html}
+    </div>
+
     <div class="section compliance-section">
         <h2>🏛️ Análisis de Seguridad - Buenas Prácticas</h2>
         <h3>Evaluación de Riesgos</h3>
@@ -595,6 +711,9 @@ class SecurityReportGenerator:
             </tr>
         """
         
+        # Hallazgos individuales
+        detailed_findings_html = self._render_detailed_findings()
+
         # Ley 1581
         ley_1581_findings_html = "".join([
             f"<li>{html.escape(finding)}</li>"
@@ -626,6 +745,7 @@ class SecurityReportGenerator:
             key_findings_html=key_findings_html,
             business_impact=html.escape(executive_summary["business_impact"]),
             summary_table_rows=summary_table_rows,
+            detailed_findings_html=detailed_findings_html,
             ley_1581_findings_html=ley_1581_findings_html,
             ley_1581_obligations_html=ley_1581_obligations_html,
             ley_1581_status=compliance["ley_1581"]["status"].upper(),
