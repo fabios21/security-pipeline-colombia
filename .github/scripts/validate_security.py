@@ -391,21 +391,27 @@ proporcionando análisis de credenciales expuestas y reportes comprensibles.
         print("   └─ 🔧 Se requiere corrección inmediata")
     
     # 💡 SECCIÓN 3: RECOMENDACIONES VISUALES
-    if compliance["recommendations"] or summary['total_secrets'] > 0 or summary['critical_vulnerabilities'] > 0:
+    if compliance["recommendations"] or summary['total_secrets'] > 0 or summary['critical_vulnerabilities'] > 0 or summary['high_vulnerabilities'] > 0:
         print(f"\n💡 RECOMENDACIONES DE ACCIÓN")
         print("═" * 40)
         
         if summary['total_secrets'] > 0:
-            print(f"\n🔴 PRIORIDAD ALTA:")
-            print("   1. 🔑 Implementar sistema de gestión de secretos (Vault, Secrets Manager)")
-            print("   2. 🗑️  Eliminar credenciales del código fuente")
-            print("   3. 📋 Revisar historial de commits para otras exposiciones")
+            print(f"\n🔴 PRIORIDAD ALTA: SECRETOS EXPUESTOS")
+            print("   1. 🔑 Revocar y reemplazar las credenciales afectadas")
+            print("   2. 🗑️  Eliminar credenciales del código e historial")
+            print("   3. 📋 Revisar otros repositorios y variables de entorno")
         
         if summary['critical_vulnerabilities'] > 0:
-            print(f"\n🟠 PRIORIDAD MEDIA:")
-            print("   1. 🔧 Corregir vulnerabilidades críticas en 7 días hábiles")
-            print("   2. 👥 Asignar equipo dedicado de seguridad")
-            print("   3. 📊 Actualizar matriz de riesgos")
+            print(f"\n🔴 PRIORIDAD CRÍTICA: VULNERABILIDADES CRÍTICAS")
+            print("   1. 🔧 Corregir o mitigar los hallazgos antes del merge")
+            print("   2. 👥 Asignar revisión inmediata del equipo de seguridad")
+            print("   3. 📊 Registrar el riesgo y verificar la corrección")
+
+        if summary['high_vulnerabilities'] > 0:
+            print(f"\n🟠 PRIORIDAD ALTA: VULNERABILIDADES ALTAS")
+            print("   1. 🔧 Corregir la vulnerabilidad detectada antes del merge")
+            print("   2. ✅ Sustituir consultas concatenadas por parámetros preparados")
+            print("   3. 🔄 Ejecutar nuevamente el pipeline tras aplicar la corrección")
         
         if compliance["data_leakage_detected"]:
             print(f"\n🚨 ACCIONES DE SEGURIDAD REQUERIDAS:")

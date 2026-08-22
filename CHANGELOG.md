@@ -5,6 +5,12 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-08-22
+
+### Fixed
+- El reporte visual ahora muestra acciones de remediación para vulnerabilidades altas, evitando una sección de recomendaciones vacía.
+- Se aclaran las prioridades de secretos, vulnerabilidades críticas y vulnerabilidades altas.
+
 ## [1.1.7] - 2026-08-22
 
 ### Fixed
