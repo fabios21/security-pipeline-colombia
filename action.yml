@@ -275,11 +275,11 @@ runs:
           fi
         fi
         
-        # Instalar semgrep
-        if ! command -v semgrep &> /dev/null; then
-          echo "Instalando semgrep..."
-          python3 -m pip install --upgrade pip
-          python3 -m pip install semgrep
+        # Instalar una versión fija de Semgrep para que las reglas y códigos de salida sean reproducibles.
+        SEMGREP_VERSION="1.97.0"
+        if ! command -v semgrep &> /dev/null || [ "$(semgrep --version 2>/dev/null || true)" != "$SEMGREP_VERSION" ]; then
+          echo "Instalando Semgrep ${SEMGREP_VERSION}..."
+          python3 -m pip install --upgrade "semgrep==${SEMGREP_VERSION}"
         fi
         
         # Instalar Python dependencies para scripts
@@ -517,11 +517,27 @@ runs:
         LOW_COUNT="0"
         TOTAL_VULNS="0"
         
+        # Resolver y validar la configuración antes de escanear. Un error de reglas
+        # debe mostrarse en el log y fallar, nunca convertirse en cero hallazgos.
+        SEMGREP_CONFIG="${{ inputs.semgrep-config }}"
+        echo "📄 Configuración Semgrep solicitada: $SEMGREP_CONFIG"
+        if [[ "$SEMGREP_CONFIG" != p/* ]] && [ ! -f "$SEMGREP_CONFIG" ]; then
+          echo "❌ No se encontró la configuración Semgrep: $SEMGREP_CONFIG"
+          exit 1
+        fi
+        if [[ "$SEMGREP_CONFIG" != p/* ]]; then
+          echo "🔍 Validando configuración Semgrep: $SEMGREP_CONFIG"
+          semgrep --validate --config "$SEMGREP_CONFIG" || {
+            echo "❌ La configuración Semgrep no es válida: $SEMGREP_CONFIG"
+            exit 1
+          }
+        fi
+
         # Ejecutar Semgrep. Con --error, el código 1 representa hallazgos;
         # cualquier otro código no cero representa un error del scanner y debe fallar cerrado.
         SEMGREP_EXIT_CODE=0
         semgrep scan \
-          --config "${{ inputs.semgrep-config }}" \
+          --config "$SEMGREP_CONFIG" \
           --sarif \
           --output semgrep-results.sarif \
           --error || SEMGREP_EXIT_CODE=$?

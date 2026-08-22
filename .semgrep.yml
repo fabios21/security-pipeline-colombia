@@ -1,14 +1,10 @@
 # Reglas SAST incluidas con Security Pipeline Colombia.
 rules:
-  - id: sql-injection-concat
-    message: "Posible SQL Injection: consulta SQL construida por concatenación"
+  - id: sql-injection-database-query
+    message: "Posible SQL Injection: consulta SQL enviada a un método query()"
     severity: ERROR
     languages: [javascript, typescript]
-    patterns:
-      - pattern: $QUERY = $LEFT + $INPUT + $RIGHT
-      - metavariable-regex:
-          metavariable: $LEFT
-          regex: '(?i).*select.*'
+    pattern: $DATABASE.query($QUERY)
 
   - id: dangerous-eval
     message: "Uso de eval() con datos dinámicos"

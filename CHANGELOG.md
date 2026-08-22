@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.7] - 2026-08-22
+
+### Fixed
+- Se fija Semgrep en `1.97.0` y se valida la configuración seleccionada antes de iniciar el escaneo.
+- El log ahora muestra la ruta de configuración y el error de validación de Semgrep en lugar de exponer solo un código de salida.
+- Las reglas SQL de prueba e incluidas usan patrones JavaScript completos y válidos para llamadas a `query()`.
+
 ## [1.1.6] - 2026-08-22
 
 ### Fixed
