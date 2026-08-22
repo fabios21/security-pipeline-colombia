@@ -1,5 +1,5 @@
 name: 'Security Pipeline Colombia'
-description: 'DEMO - Pipeline seguridad. IMPORTANTE: Ver README para instalación completa'
+description: 'DEMO - Análisis de seguridad (requiere checkout previo). Ver README para workflow completo'
 author: 'Security Pipeline Colombia Team'
 
 branding:
@@ -132,12 +132,6 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
-        
-    # Paso 1: Checkout del código
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
         
     # Paso 2: Configurar entorno
     - name: Setup environment
