@@ -5,6 +5,24 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-08-22
+
+### Added
+- **Marketplace Installation Warnings**: Added clear warnings about incomplete marketplace snippet
+- **QUICK_START.md**: New quick start guide with correct 3-step installation process
+- **PROBLEMA_MARKETPLACE_FIX.md**: Detailed explanation of the marketplace code issue and solutions
+- **Installation Examples**: Provided correct workflow examples in examples/ directory
+- **README.md Updates**: Added critical installation warning section
+
+### Changed
+- **action.yml Name**: Updated to include "(no install)" marker to discourage direct installation
+- **Description Clarity**: Improved description to highlight educational/demo nature
+- **Documentation**: Enhanced README.md with prominent installation warnings
+
+### Fixed
+- **Marketplace Snippet Issue**: Documented GitHub Marketplace limitation that shows incomplete code
+- **User Confusion**: Reduced confusion by providing correct installation path
+
 ## [1.1.1] - 2026-08-16
 
 ### Fixed
