@@ -528,11 +528,11 @@ runs:
           echo "📄 Archivo SARIF generado:"
           echo "Tamaño: $(wc -c < semgrep-results.sarif) bytes"
           
-          # Contar vulnerabilidades por severidad usando diferentes métodos
-          CRITICAL_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          HIGH_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          MEDIUM_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          LOW_COUNT=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          # Semgrep puede emitir security-severity numérica o level/issue_severity.
+          CRITICAL_COUNT=$(count_sarif_by_severity critical semgrep-results.sarif)
+          HIGH_COUNT=$(count_sarif_by_severity high semgrep-results.sarif)
+          MEDIUM_COUNT=$(count_sarif_by_severity medium semgrep-results.sarif)
+          LOW_COUNT=$(count_sarif_by_severity low semgrep-results.sarif)
           
           # Total agregado de todos los runs (evita salida multilinea por run)
           TOTAL_RESULTS=$(sanitize_count "$(jq -r '[.runs[]?.results[]?] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
@@ -903,8 +903,8 @@ runs:
         fi
         
         if [ -f "semgrep-results.sarif" ]; then
-          ACTUAL_CRITICAL=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          ACTUAL_HIGH=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          ACTUAL_CRITICAL=$(count_sarif_by_severity critical semgrep-results.sarif)
+          ACTUAL_HIGH=$(count_sarif_by_severity high semgrep-results.sarif)
         fi
         
         echo "📊 Resultados del análisis:"
@@ -1020,11 +1020,11 @@ runs:
         # Leer vulnerabilidades usando la MISMA lógica del paso 6
         if [ -f "semgrep-results.sarif" ] && [ -s "semgrep-results.sarif" ]; then
           
-          # Contar por severidad igual que en paso 6
-          FINAL_CRITICAL=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          FINAL_HIGH=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 7.0 and .properties."security-severity"? < 9.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          FINAL_MEDIUM=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? >= 4.0 and .properties."security-severity"? < 7.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
-          FINAL_LOW=$(sanitize_count "$(jq -r '[.runs[]?.results[]? | select(.properties."security-severity"? < 4.0)] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")
+          # Contar por severidad usando el normalizador común de SARIF/Semgrep.
+          FINAL_CRITICAL=$(count_sarif_by_severity critical semgrep-results.sarif)
+          FINAL_HIGH=$(count_sarif_by_severity high semgrep-results.sarif)
+          FINAL_MEDIUM=$(count_sarif_by_severity medium semgrep-results.sarif)
+          FINAL_LOW=$(count_sarif_by_severity low semgrep-results.sarif)
           
           # Total agregado de todos los runs
           TOTAL_RESULTS=$(sanitize_count "$(jq -r '[.runs[]?.results[]?] | length // 0' semgrep-results.sarif 2>/dev/null || echo 0)")

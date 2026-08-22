@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-08-22
+
+### Fixed
+- Se corrigió la clasificación de resultados SARIF de Semgrep que usan `level: error`, `warning` o `note` en lugar de `security-severity` numérico.
+- Los hallazgos `ERROR` ahora se clasifican como altos y activan `block-on-high`.
+- El conteo del resumen y el gate final usan el mismo normalizador de severidad.
+
 ## [1.1.3] - 2026-08-22
 
 ### Changed

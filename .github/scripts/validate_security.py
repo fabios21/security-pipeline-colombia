@@ -138,43 +138,64 @@ class SecurityValidator:
             print(f"Error cargando resultados de semgrep: {e}")
             return False
     
+    @staticmethod
+    def _normalize_sarif_severity(result: Dict, rule_info: Dict) -> str:
+        """Convierte severidades numéricas y niveles SARIF/Semgrep a una categoría común."""
+        properties = result.get("properties", {}) or {}
+        score = properties.get("security-severity")
+
+        if score is not None:
+            try:
+                numeric_score = float(score)
+                if numeric_score >= 9.0:
+                    return "critical"
+                if numeric_score >= 7.0:
+                    return "high"
+                if numeric_score >= 4.0:
+                    return "medium"
+                return "low"
+            except (TypeError, ValueError):
+                pass
+
+        label = properties.get("issue_severity")
+        if label is None:
+            label = result.get("level")
+        if label is None:
+            label = rule_info.get("defaultConfiguration", {}).get("level")
+        label = str(label or "").strip().lower()
+
+        # Semgrep SARIF usa ERROR/WARNING/NOTE en result.level.
+        if label in {"critical", "crit"}:
+            return "critical"
+        if label in {"high", "error"}:
+            return "high"
+        if label in {"medium", "warning"}:
+            return "medium"
+        if label in {"low", "note", "info"}:
+            return "low"
+
+        # Un resultado existente sin severidad no debe desaparecer del conteo.
+        return "medium"
+
     def _parse_sarif_result(self, result: Dict, run: Dict) -> Optional[Dict]:
         """Parsea un resultado individual de SARIF"""
         try:
-            # Extraer información de ubicación
             location = result.get('locations', [{}])[0]
             physical_location = location.get('physicalLocation', {})
             artifact_location = physical_location.get('artifactLocation', {})
             region = physical_location.get('region', {})
-            
-            # Extraer regla y severidad
+
             rule_id = result.get('ruleId', 'Unknown')
             rule_index = result.get('ruleIndex', 0)
-            
-            # Buscar información de la regla
+
             rule_info = {}
             if 'tool' in run and 'driver' in run['tool']:
                 rules = run['tool']['driver'].get('rules', [])
-                if rule_index < len(rules):
+                if isinstance(rule_index, int) and 0 <= rule_index < len(rules):
                     rule_info = rules[rule_index]
-            
-            # Determinar severidad
-            severity = "medium"
-            if 'properties' in result:
-                props = result['properties']
-                if 'security-severity' in props:
-                    sec_sev = float(props['security-severity'])
-                    if sec_sev >= 9.0:
-                        severity = "critical"
-                    elif sec_sev >= 7.0:
-                        severity = "high"
-                    elif sec_sev >= 4.0:
-                        severity = "medium"
-                    else:
-                        severity = "low"
-                elif 'issue_severity' in props:
-                    severity = props['issue_severity'].lower()
-            
+
+            severity = self._normalize_sarif_severity(result, rule_info)
+
             return {
                 "rule": rule_id,
                 "description": rule_info.get('shortDescription', {}).get('text', ''),
@@ -184,7 +205,7 @@ class SecurityValidator:
                 "message": result.get('message', {}).get('text', '')
             }
         except Exception as e:
-            print(f"Error parseando resultado SARIF: {e}")
+            print(f"Error parseando resultado de SARIF: {e}")
             return None
     
     def determine_validation_status(self) -> str:
