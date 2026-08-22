@@ -883,16 +883,16 @@ runs:
 
         if [ ! -s "$HTML_REPORT" ] || ! grep -qi '<html' "$HTML_REPORT" 2>/dev/null; then
           echo "⚠️ Creando HTML de contingencia: $HTML_REPORT"
-          cat > "$HTML_REPORT" <<'HTML'
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><title>Reporte de Seguridad</title></head>
-<body>
-  <h1>Reporte de Seguridad Informática</h1>
-  <p>El reporte completo no pudo generarse. Consulte los archivos JSON, SARIF y los logs del workflow para el detalle del análisis.</p>
-</body>
-</html>
-HTML
+          {
+            echo '<!DOCTYPE html>'
+            echo '<html lang="es">'
+            echo '<head><meta charset="UTF-8"><title>Reporte de Seguridad</title></head>'
+            echo '<body>'
+            echo '  <h1>Reporte de Seguridad Informática</h1>'
+            echo '  <p>El reporte completo no pudo generarse. Consulte los archivos JSON, SARIF y los logs del workflow para el detalle del análisis.</p>'
+            echo '</body>'
+            echo '</html>'
+          } > "$HTML_REPORT"
         fi
 
         if [[ ",$REPORT_URLS," != *",$HTML_REPORT,"* ]]; then
