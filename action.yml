@@ -318,12 +318,17 @@ runs:
         mkdir -p .github/workflows
         mkdir -p .github/scripts
         
-        # Copiar scripts desde el repositorio de la acción
-        # Estos archivos están incluidos en el paquete de la acción
-        cp -r $GITHUB_ACTION_PATH/.github/scripts/* .github/scripts/ || true
-        cp $GITHUB_ACTION_PATH/.gitleaks.toml . || true
-        cp $GITHUB_ACTION_PATH/.semgrep.yml . || true
-        cp $GITHUB_ACTION_PATH/security-report-template.md . || true
+        # Copiar scripts desde el repositorio de la acción.
+        # Nunca sobrescribir la configuración Semgrep del repositorio consumidor.
+        cp -r "$GITHUB_ACTION_PATH"/.github/scripts/* .github/scripts/ || true
+        cp "$GITHUB_ACTION_PATH"/.gitleaks.toml . || true
+        if [ -f ".semgrep.yml" ]; then
+          echo "Preservando configuración Semgrep del repositorio consumidor: .semgrep.yml"
+        else
+          cp "$GITHUB_ACTION_PATH"/.semgrep.yml .
+          echo "Usando configuración Semgrep incluida con la acción"
+        fi
+        cp "$GITHUB_ACTION_PATH"/security-report-template.md . || true
         
         # Copiar configuración personalizada si se proporciona y es diferente del default
         CONFIG_PATH="${{ inputs.config-path }}"
@@ -512,15 +517,25 @@ runs:
         LOW_COUNT="0"
         TOTAL_VULNS="0"
         
-        # Ejecutar semgrep con manejo de errores
+        # Ejecutar Semgrep. Con --error, el código 1 representa hallazgos;
+        # cualquier otro código no cero representa un error del scanner y debe fallar cerrado.
         SEMGREP_EXIT_CODE=0
         semgrep scan \
           --config "${{ inputs.semgrep-config }}" \
           --sarif \
           --output semgrep-results.sarif \
           --error || SEMGREP_EXIT_CODE=$?
-        
+
         echo "🔍 Semgrep exit code: $SEMGREP_EXIT_CODE"
+        if [ "$SEMGREP_EXIT_CODE" -ne 0 ] && [ "$SEMGREP_EXIT_CODE" -ne 1 ]; then
+          echo "❌ Semgrep no pudo completar el análisis. No se aprobará el cambio con resultados no confiables."
+          exit 1
+        fi
+
+        if [ ! -s "semgrep-results.sarif" ]; then
+          echo "❌ Semgrep terminó sin generar un reporte SARIF válido."
+          exit 1
+        fi
         
         # Parsear resultados
         if [ -f "semgrep-results.sarif" ] && [ -s "semgrep-results.sarif" ]; then

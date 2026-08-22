@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-08-22
+
+### Fixed
+- Semgrep ya no sobrescribe un archivo `.semgrep.yml` proporcionado por el repositorio consumidor.
+- La acción falla de forma explícita si Semgrep no puede ejecutar el análisis o no genera un reporte SARIF válido; no convierte un fallo de escaneo en cero hallazgos.
+- Se reemplazó la configuración Semgrep incluida por reglas válidas, incluida la detección de consultas SQL construidas por concatenación.
+
 ## [1.1.5] - 2026-08-22
 
 ### Fixed
