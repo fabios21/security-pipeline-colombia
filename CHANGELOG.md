@@ -5,6 +5,11 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.15] - 2026-08-23
+
+### Fixed
+- Se actualizó la marca de versión incluida dentro del HTML para identificar correctamente el generador publicado.
+
 ## [1.1.14] - 2026-08-23
 
 ### Fixed
