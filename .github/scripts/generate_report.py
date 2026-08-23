@@ -50,8 +50,8 @@ class SecurityReportGenerator:
                 "status_unknown": "desconocido",
                 "no_critical_issues": "No se detectaron problemas de seguridad críticos en el análisis",
                 "data_leakage_detected": "Se detectaron {} posibles fugas de información sensible",
-                "critical_vulnerabilities_detected": "Se encontraron {} vulnerabilidades críticas que requieren atención inmediata",
-                "high_vulnerabilities_detected": "Se encontraron {} vulnerabilidades de alto riesgo",
+                "critical_vulnerabilities_detected": "Vulnerabilidades críticas detectadas: {}. Requieren atención inmediata",
+                "high_vulnerabilities_detected": "Vulnerabilidades de alto riesgo detectadas: {}",
                 "business_impact_high": "ALTO IMPACTO - Existen riesgos significativos que podrían afectar la continuidad del negocio y generar responsabilidades legales.",
                 "business_impact_moderate": "IMPACTO MODERADO - Se requieren controles adicionales antes de proceder con los cambios propuestos.",
                 "business_impact_low": "BAJO IMPACTO - El nivel de seguridad actual es apropiado para las operaciones del negocio."
@@ -144,9 +144,13 @@ class SecurityReportGenerator:
             }
         }
         
-        # Análisis de riesgos de datos
+        # Análisis de riesgos de datos y vulnerabilidades SAST
         ley_1581 = compliance["ley_1581"]
-        
+        summary = self.validation_result.get("summary", {})
+        total_vulnerabilities = int(summary.get("total_vulnerabilities", 0) or 0)
+        critical_high = int(summary.get("critical_vulnerabilities", 0) or 0) + int(summary.get("high_vulnerabilities", 0) or 0)
+        medium_low = int(summary.get("medium_vulnerabilities", 0) or 0) + int(summary.get("low_vulnerabilities", 0) or 0)
+
         if self.validation_result["compliance"]["ley_1581"]["data_leakage_detected"]:
             ley_1581["findings"].append(
                 "Se detectó posible exposición de credenciales sensibles, lo que constituye "
@@ -157,6 +161,23 @@ class SecurityReportGenerator:
                 "Revisar el equipo de seguridad para evaluación de riesgos y "
                 "implementación de controles adecuados."
             )
+            ley_1581["status"] = "requires_action"
+        elif total_vulnerabilities > 0:
+            ley_1581["findings"].append(
+                f"Se detectaron {total_vulnerabilities} vulnerabilidades SAST; "
+                "el estado de cumplimiento no puede considerarse conforme hasta corregirlas."
+            )
+            ley_1581["obligations"].append(
+                "Documentar la corrección de los hallazgos y repetir el análisis de seguridad antes del merge."
+            )
+            if critical_high > 0:
+                ley_1581["obligations"].append(
+                    f"Priorizar {critical_high} vulnerabilidades críticas o altas antes de aprobar el cambio."
+                )
+            if medium_low > 0:
+                ley_1581["obligations"].append(
+                    f"Gestionar {medium_low} vulnerabilidades medias o bajas mediante corrección o excepción formal."
+                )
             ley_1581["status"] = "requires_action"
         else:
             ley_1581["findings"].append(

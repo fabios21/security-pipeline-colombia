@@ -5,6 +5,13 @@ Todos los cambios notables en Security Pipeline Colombia serán documentados en 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.14] - 2026-08-23
+
+### Fixed
+- El análisis de cumplimiento ya no muestra `COMPLIANT` cuando existen vulnerabilidades SAST detectadas.
+- Los hallazgos críticos, altos, medios y bajos ahora aparecen reflejados como acciones pendientes en el reporte.
+- Se mejoró la redacción del resumen para evitar errores gramaticales con un único hallazgo.
+
 ## [1.1.13] - 2026-08-23
 
 ### Fixed
