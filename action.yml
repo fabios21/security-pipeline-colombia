@@ -336,15 +336,15 @@ runs:
         
         # Copiar scripts desde el repositorio de la acción.
         # Nunca sobrescribir la configuración Semgrep del repositorio consumidor.
-        cp -r "$GITHUB_ACTION_PATH"/.github/scripts/* .github/scripts/ || true
-        cp "$GITHUB_ACTION_PATH"/.gitleaks.toml . || true
+        cp -r "$GITHUB_ACTION_PATH"/.github/scripts/* .github/scripts/
+        cp "$GITHUB_ACTION_PATH"/.gitleaks.toml .
         if [ -f ".semgrep.yml" ]; then
           echo "Preservando configuración Semgrep del repositorio consumidor: .semgrep.yml"
         else
           cp "$GITHUB_ACTION_PATH"/.semgrep.yml .
           echo "Usando configuración Semgrep incluida con la acción"
         fi
-        cp "$GITHUB_ACTION_PATH"/security-report-template.md . || true
+        cp "$GITHUB_ACTION_PATH"/security-report-template.md .
         
         # Copiar configuración personalizada si se proporciona y es diferente del default
         CONFIG_PATH="${ACTION_CONFIG_PATH:-.gitleaks.toml}"
@@ -743,6 +743,15 @@ runs:
           *) echo "⚠️ Idioma de reporte inválido o vacío; se utilizará es_CO"; REPORT_LANG="es_CO" ;;
         esac
         HTML_REPORT="security-report-$REPORT_LANG.html"
+        REPORT_GENERATOR="$GITHUB_ACTION_PATH/.github/scripts/generate_report.py"
+        echo "🧩 Generador de reportes: $REPORT_GENERATOR"
+        if [ -f "$REPORT_GENERATOR" ]; then
+          echo "🔐 SHA-256 del generador: $(sha256sum "$REPORT_GENERATOR" | cut -d' ' -f1)"
+        else
+          echo "⚠️ No se encontró el generador en GITHUB_ACTION_PATH; se utilizará el HTML de contingencia"
+        fi
+        # Evitar reutilizar un HTML de una ejecución o versión anterior.
+        rm -f "$HTML_REPORT"
         
         # Verificar archivos de entrada
         SECRETS_FILE="gitleaks-report.json"
@@ -825,8 +834,8 @@ runs:
           echo "📋 Generando reporte en formato: $format"
           case $format in
             html)
-              if [ -f ".github/scripts/generate_report.py" ]; then
-                python3 .github/scripts/generate_report.py \
+              if [ -f "$REPORT_GENERATOR" ]; then
+                python3 "$REPORT_GENERATOR" \
                   --validation "$VALIDATION_FILE" \
                   --output security-report-$REPORT_LANG.html \
                   --format html \
@@ -865,8 +874,8 @@ runs:
               REPORT_URLS="$REPORT_URLS,security-report-$REPORT_LANG.html"
               ;;
             markdown)
-              if [ -f ".github/scripts/generate_report.py" ]; then
-                python3 .github/scripts/generate_report.py \
+              if [ -f "$REPORT_GENERATOR" ]; then
+                python3 "$REPORT_GENERATOR" \
                   --validation "$VALIDATION_FILE" \
                   --output security-report-$REPORT_LANG.md \
                   --format markdown \
@@ -911,9 +920,9 @@ runs:
         done
         
         # El HTML es obligatorio, aunque report-formats no incluya html o falle el generador.
-        if [ ! -s "$HTML_REPORT" ] && [ -f ".github/scripts/generate_report.py" ] && [ -s "$VALIDATION_FILE" ]; then
+        if [ ! -s "$HTML_REPORT" ] && [ -f "$REPORT_GENERATOR" ] && [ -s "$VALIDATION_FILE" ]; then
           echo "📄 Generando reporte HTML obligatorio: $HTML_REPORT"
-          python3 .github/scripts/generate_report.py \
+          python3 "$REPORT_GENERATOR" \
             --validation "$VALIDATION_FILE" \
             --output "$HTML_REPORT" \
             --format html \
@@ -932,6 +941,12 @@ runs:
             echo '</body>'
             echo '</html>'
           } > "$HTML_REPORT"
+        fi
+
+        if ! grep -qi 'Hallazgos Detectados' "$HTML_REPORT"; then
+          echo "❌ El HTML no contiene la sección de hallazgos individuales; el generador utilizado no es compatible."
+          echo "❌ Revise el SHA-256 del generador y la referencia de la Action."
+          exit 1
         fi
 
         if [[ ",$REPORT_URLS," != *",$HTML_REPORT,"* ]]; then
