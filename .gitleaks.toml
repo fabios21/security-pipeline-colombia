@@ -69,15 +69,11 @@ tags = ["stripe", "api-key"]
 
 # Exclusiones para falsos positivos comunes
 [allowlist]
-description = "Exclusiones para archivos de prueba y ejemplo"
+description = "Exclusiones para archivos de ejemplo solamente (NO excluye test-*)"
 paths = [
-    ".*/test/.*",
-    ".*/tests/.*",
     ".*/example/.*",
     ".*/examples/.*",
-    ".*/samples/.*",
-    ".*\\..*test\\..*",
-    ".*\\..*spec\\..*"
+    ".*/samples/.*"
 ]
 files = [
     "(?i).*config.*example.*",
