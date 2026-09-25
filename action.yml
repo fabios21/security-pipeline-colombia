@@ -533,38 +533,22 @@ EOF
             echo "📄 Primeras líneas del JSON:"
             head -5 gitleaks-report.json || echo "Error leyendo archivo"
             
-            # Intentar múltiples formas de parsear el JSON
-            echo "🔢 Intentando parsear JSON..."
-            
-            # Método 1: Estructura estándar con .findings
-            SECRET_COUNT_1=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
-            echo "  Método 1 (.findings): $SECRET_COUNT_1"
-            
-            # Método 2: Si es un array directo
-            SECRET_COUNT_2=$(sanitize_count "$(jq -r '. | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
-            echo "  Método 2 (array directo): $SECRET_COUNT_2"
-            
-            # Método 3: Contar manualmente con grep
-            SECRET_COUNT_3=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
-            echo "  Método 3 (grep RuleID): $SECRET_COUNT_3"
-            
-            # Usar el número más alto (más conservador)
-            if [ "$SECRET_COUNT_1" -gt "0" ]; then
-              SECRET_COUNT="$SECRET_COUNT_1"
-              echo "✅ Usando método 1: $SECRET_COUNT"
-            elif [ "$SECRET_COUNT_2" -gt "0" ]; then
-              SECRET_COUNT="$SECRET_COUNT_2"
-              echo "✅ Usando método 2: $SECRET_COUNT"
-            elif [ "$SECRET_COUNT_3" -gt "0" ]; then
-              SECRET_COUNT="$SECRET_COUNT_3"
-              echo "✅ Usando método 3: $SECRET_COUNT"
-            else
-              SECRET_COUNT="0"
-              echo "⚠️ Todos los métodos fallaron, usando 0"
+            # Conteo robusto: el reporte de Gitleaks es un array JSON en la raíz.
+            # Este método maneja array raíz y también objeto con findings/Findings.
+            echo "🔢 Contando hallazgos (método unificado Python)..."
+            SECRET_COUNT=$(sanitize_count "$(python3 -c "import json,sys; d=json.load(open('gitleaks-report.json')); print(len(d) if isinstance(d,list) else len(d.get('findings',d.get('Findings',[]))))" 2>/dev/null || echo 0)")
+
+            # Respaldo con grep si Python fallara por cualquier motivo
+            if [ "$SECRET_COUNT" = "0" ]; then
+              GREP_COUNT=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
+              if [ "$GREP_COUNT" -gt "0" ]; then
+                SECRET_COUNT="$GREP_COUNT"
+              fi
             fi
+            echo "✅ Secretos contados: $SECRET_COUNT"
           else
             echo "⚠️ gitleaks-report.json está vacío, creando estructura válida..."
-            echo '{"findings": []}' > gitleaks-report.json
+            echo '[]' > gitleaks-report.json
             SECRET_COUNT="0"
           fi
           
@@ -862,7 +846,7 @@ EOF
             VULN_COUNT_VISUAL="0"
             
             if [ -f "gitleaks-report.json" ]; then
-              SECRET_COUNT_VISUAL=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
+              SECRET_COUNT_VISUAL=$(sanitize_count "$(python3 -c "import json,sys; d=json.load(open('gitleaks-report.json')); print(len(d) if isinstance(d,list) else len(d.get('findings',d.get('Findings',[]))))" 2>/dev/null || echo 0)")
             fi
             
             if [ -f "semgrep-results.sarif" ]; then
@@ -1102,7 +1086,7 @@ EOF
         fi
         
         if [ -f "gitleaks-report.json" ] && [ -s "gitleaks-report.json" ]; then
-          ACTUAL_SECRETS=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
+          ACTUAL_SECRETS=$(sanitize_count "$(python3 -c "import json,sys; d=json.load(open('gitleaks-report.json')); print(len(d) if isinstance(d,list) else len(d.get('findings',d.get('Findings',[]))))" 2>/dev/null || echo 0)")
           if [ "$ACTUAL_SECRETS" = "0" ]; then
             ACTUAL_SECRETS=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
           fi
@@ -1222,20 +1206,13 @@ EOF
         # Leer secretos usando la MISMA lógica del paso 5
         if [ -f "gitleaks-report.json" ] && [ -s "gitleaks-report.json" ]; then
           
-          # Usar la misma lógica exacta del paso de detección (método 2 funcionó)
-          SECRET_COUNT_1=$(sanitize_count "$(jq -r '.findings | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
-          SECRET_COUNT_2=$(sanitize_count "$(jq -r '. | length // 0' gitleaks-report.json 2>/dev/null || echo 0)")
-          SECRET_COUNT_3=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
-          
-          # Usar el mismo criterio del paso 5
-          if [ "$SECRET_COUNT_1" -gt "0" ]; then
-            FINAL_SECRETS="$SECRET_COUNT_1"
-          elif [ "$SECRET_COUNT_2" -gt "0" ]; then
-            FINAL_SECRETS="$SECRET_COUNT_2"  
-          elif [ "$SECRET_COUNT_3" -gt "0" ]; then
-            FINAL_SECRETS="$SECRET_COUNT_3"
-          else
-            FINAL_SECRETS="0"
+          # Método unificado: maneja array raíz de Gitleaks y objeto con findings/Findings
+          FINAL_SECRETS=$(sanitize_count "$(python3 -c "import json,sys; d=json.load(open('gitleaks-report.json')); print(len(d) if isinstance(d,list) else len(d.get('findings',d.get('Findings',[]))))" 2>/dev/null || echo 0)")
+          if [ "$FINAL_SECRETS" = "0" ]; then
+            GREP_COUNT=$(sanitize_count "$(grep -c '"RuleID"' gitleaks-report.json 2>/dev/null || echo 0)")
+            if [ "$GREP_COUNT" -gt "0" ]; then
+              FINAL_SECRETS="$GREP_COUNT"
+            fi
           fi
         fi
         
