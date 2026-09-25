@@ -385,72 +385,11 @@ runs:
         # Ejecutar gitleaks y capturar resultado
         GITLEAKS_EXIT_CODE=0
         
-        # Crear configuración por defecto de Gitleaks si no existe
-        if [ ! -f ".gitleaks.toml" ]; then
-          echo "⚙️ Creando configuración por defecto de Gitleaks..."
-          cat > .gitleaks.toml << 'EOF'
-# Configuración de Gitleaks - Security Pipeline Colombia
-title = "Gitleaks Security Scan"
-
-[allowlist]
-description = "Allowlist para archivos de configuración del pipeline"
-paths = [
-  '''\.github/workflows/.*\.yml''',
-]
-
-regexes = [
-  '''example\.com''',
-  '''api\.example\.com''',
-  '''localhost''',
-]
-
-# Reglas personalizadas de alta sensibilidad
-
-[[rules]]
-id = "password-assignment"
-description = "Password, secret, or token assignment detected"
-regex = '''(?i)(password|passwd|pwd|pass|secret|token|api_key|apikey)\s*[=:]\s*['\"]([^\s'\"]{4,})['\"]'''
-secretGroup = 2
-
-[[rules]]
-id = "uppercase-password-var"
-description = "Uppercase password variable assignment"
-regex = '''(PASS|PASSWORD|SECRET|PWD|PASSWD|API_KEY|APIKEY|TOKEN)\s*=\s*['\"]([^\s'\"]{4,})['\"]'''
-secretGroup = 2
-
-[[rules]]
-id = "aws-access-key"
-description = "AWS Access Key"
-regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
-
-[[rules]]
-id = "github-pat"
-description = "GitHub Personal Access Token"
-regex = '''ghp_[0-9a-zA-Z]{36}'''
-
-[[rules]]
-id = "slack-webhook"
-description = "Slack Webhook"
-regex = '''https://hooks\.slack\.com/services/[A-Za-z0-9+/]{44,48}'''
-
-[[rules]]
-id = "google-api-key"
-description = "Google API Key"
-regex = '''AIza[0-9A-Za-z\-_]{35}'''
-
-[[rules]]
-id = "jwt-token"
-description = "JWT Token"
-regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
-
-[[rules]]
-id = "private-key"
-description = "Private Key"
-regex = '''-----BEGIN[ A-Z]*PRIVATE KEY-----'''
-EOF
-          echo "✅ Configuración por defecto creada"
+        # La configuración .gitleaks.toml se instala desde el repo de la acción (Paso 4).
+        if [ -f ".gitleaks.toml" ]; then
+          echo "✅ Usando configuración de Gitleaks (.gitleaks.toml)"
         else
-          echo "✅ Usando configuración de Gitleaks del repositorio (.gitleaks.toml)"
+          echo "⚠️ No se encontró .gitleaks.toml; Gitleaks usará su configuración por defecto"
         fi
         
         # Determinar modo de escaneo según configuración
