@@ -1,6 +1,6 @@
-name: 'Security Pipeline Colombia (no install)'
-description: '🔒 Pipeline de seguridad automatizado para GitHub Actions con enfoque en mejores prácticas de seguridad'
-author: 'Security Pipeline Colombia Team'
+name: 'PipeShield'
+description: '�️ PipeShield - Pipeline de seguridad automatizado para GitHub Actions: detección de secretos, análisis SAST y reportes con contexto colombiano'
+author: 'PipeShield Team'
 
 branding:
   icon: 'shield'
@@ -148,7 +148,7 @@ runs:
         ACTION_TIMEZONE: ${{ inputs.timezone }}
         ACTION_REPORT_LANGUAGE: ${{ inputs['report-language'] }}
       run: |
-        echo "🔒 Security Pipeline Colombia - Iniciando"
+        echo "�️ PipeShield - Iniciando"
         CONFIG_PATH_INPUT="$(printf '%s' "${ACTION_CONFIG_PATH:-}" | tr -d '[:space:]')"; [ -z "$CONFIG_PATH_INPUT" ] && CONFIG_PATH_INPUT=".gitleaks.toml"
         COMPLIANCE_LEVEL_INPUT="$(printf '%s' "${ACTION_COMPLIANCE_LEVEL:-}" | tr -d '[:space:]')"; [ -z "$COMPLIANCE_LEVEL_INPUT" ] && COMPLIANCE_LEVEL_INPUT="standard"
         TIMEZONE_INPUT="${ACTION_TIMEZONE:-America/Bogota}"
@@ -1224,7 +1224,7 @@ runs:
       shell: bash
       run: |
         echo ""
-        echo "✅ Security Pipeline Colombia - Ejecución completada"
+        echo "✅ PipeShield - Ejecución completada"
         echo "==================================================="
         echo ""
         echo "📋 Próximos pasos:"
