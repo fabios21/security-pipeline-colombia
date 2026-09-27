@@ -149,8 +149,8 @@ runs:
         ACTION_REPORT_LANGUAGE: ${{ inputs['report-language'] }}
       run: |
         echo "🔒 Security Pipeline Colombia - Iniciando"
-        CONFIG_PATH_INPUT="${ACTION_CONFIG_PATH:-.gitleaks.toml}"
-        COMPLIANCE_LEVEL_INPUT="${ACTION_COMPLIANCE_LEVEL:-standard}"
+        CONFIG_PATH_INPUT="$(printf '%s' "${ACTION_CONFIG_PATH:-}" | tr -d '[:space:]')"; [ -z "$CONFIG_PATH_INPUT" ] && CONFIG_PATH_INPUT=".gitleaks.toml"
+        COMPLIANCE_LEVEL_INPUT="$(printf '%s' "${ACTION_COMPLIANCE_LEVEL:-}" | tr -d '[:space:]')"; [ -z "$COMPLIANCE_LEVEL_INPUT" ] && COMPLIANCE_LEVEL_INPUT="standard"
         TIMEZONE_INPUT="${ACTION_TIMEZONE:-America/Bogota}"
         REPORT_LANGUAGE_INPUT="${ACTION_REPORT_LANGUAGE:-es_CO}"
         echo "📝 Configuración: $CONFIG_PATH_INPUT"
@@ -347,7 +347,7 @@ runs:
         cp "$GITHUB_ACTION_PATH"/security-report-template.md .
         
         # Copiar configuración personalizada si se proporciona y es diferente del default
-        CONFIG_PATH="${ACTION_CONFIG_PATH:-.gitleaks.toml}"
+        CONFIG_PATH="$(printf '%s' "${ACTION_CONFIG_PATH:-}" | tr -d '[:space:]')"; [ -z "$CONFIG_PATH" ] && CONFIG_PATH=".gitleaks.toml"
         if [ -f "$CONFIG_PATH" ] && [ "$CONFIG_PATH" != ".gitleaks.toml" ]; then
           echo "Usando configuración personalizada: $CONFIG_PATH"
           cp "$CONFIG_PATH" .gitleaks.toml
@@ -392,8 +392,9 @@ runs:
           echo "⚠️ No se encontró .gitleaks.toml; Gitleaks usará su configuración por defecto"
         fi
         
-        # Determinar modo de escaneo según configuración
-        SCAN_MODE="${ACTION_SCAN_MODE:-pr-only}"
+        # Determinar modo de escaneo según configuración (normalizar vacío -> default)
+        SCAN_MODE="$(printf '%s' "${ACTION_SCAN_MODE:-}" | tr -d '[:space:]')"
+        [ -z "$SCAN_MODE" ] && SCAN_MODE="pr-only"
         echo "🔍 Modo de escaneo configurado: $SCAN_MODE"
         
         case $SCAN_MODE in
@@ -530,8 +531,10 @@ runs:
         
         # Resolver y validar la configuración antes de escanear. Un error de reglas
         # debe mostrarse en el log y fallar, nunca convertirse en cero hallazgos.
-        SEMGREP_CONFIG="${ACTION_SEMGREP_CONFIG:-p/owasp-top-ten}"
-        if [ -z "${ACTION_SEMGREP_CONFIG:-}" ]; then
+        # Normalizar: quitar espacios en blanco. Si queda vacío, usar el default.
+        SEMGREP_CONFIG="$(printf '%s' "${ACTION_SEMGREP_CONFIG:-}" | tr -d '[:space:]')"
+        if [ -z "$SEMGREP_CONFIG" ]; then
+          SEMGREP_CONFIG="p/owasp-top-ten"
           echo "⚠️ Input semgrep-config vacío; se utilizará la configuración predeterminada p/owasp-top-ten"
         fi
         echo "📄 Configuración Semgrep solicitada: $SEMGREP_CONFIG"
