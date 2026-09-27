@@ -973,8 +973,11 @@ runs:
         fi
         echo "::endgroup::"
 
-        echo "📄 Archivos generados para el artifact:"
-        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-*.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
+        echo "📄 Listado COMPLETO del directorio de trabajo (diagnóstico):"
+        ls -la
+        echo ""
+        echo "📄 Reportes esperados para el artifact:"
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt pr-comment.md security-report-*.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
 
     # Paso 10b: Subir artifacts DENTRO de la acción (disponible para cualquier repo consumidor)
     - name: Upload security reports
@@ -987,10 +990,11 @@ runs:
           semgrep-results.sarif
           validation-result.json
           visual-report.txt
+          pr-comment.md
           security-report-*.html
           security-report-*.md
         retention-days: 30
-        if-no-files-found: ignore
+        if-no-files-found: warn
         
     # Paso 11: Verificación final de bloqueo
     - name: Final security validation
@@ -1244,7 +1248,7 @@ runs:
         
         echo ""
         echo "📄 Todos los reportes están disponibles como artifacts"
-        echo "📍 Descargar el artifact 'security-reports-prueba' para ver detalles completos"
+        echo "📍 Descargar el artifact 'security-reports' para ver detalles completos"
         
         # Aplicar el bloqueo SOLO AL FINAL (después de mostrar todo)
         if [ "${SHOULD_FAIL:-false}" = "true" ]; then
