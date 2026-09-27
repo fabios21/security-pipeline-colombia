@@ -1,4 +1,4 @@
-# Manual de Usuario — PipeShield
+# Manual de Usuario — PipelineShield
 
 **Versión:** v1.1.28
 **Qué es:** una GitHub Action que revisa automáticamente tu repositorio en busca de secretos expuestos y vulnerabilidades, y bloquea los cambios que representen un riesgo de seguridad.
@@ -40,7 +40,7 @@ Puedes hacerlo desde la web de GitHub:
 ### Paso 2 — Pegar el contenido
 
 ```yaml
-name: PipeShield
+name: PipelineShield
 
 on:
   pull_request:
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: PipeShield
+      - name: PipelineShield
         uses: fabios21/security-pipeline-colombia@v1.1.28
         with:
           scan-mode: pr-only
@@ -79,7 +79,7 @@ Confirma los cambios (commit). ¡Listo! A partir de ahora, el pipeline se ejecut
 No hay que hacer nada especial. El flujo normal es:
 
 1. Trabajas en una rama y creas un **Pull Request** hacia `main` o `develop`.
-2. GitHub ejecuta el pipeline automáticamente (verás un check llamado **"PipeShield"**).
+2. GitHub ejecuta el pipeline automáticamente (verás un check llamado **"PipelineShield"**).
 3. Esperas 1-2 minutos a que termine.
 4. Revisas el resultado:
    - **Check verde ✅** → no hay problemas de seguridad, puedes fusionar.

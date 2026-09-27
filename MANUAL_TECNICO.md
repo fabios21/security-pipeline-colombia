@@ -1,6 +1,6 @@
-# Manual Técnico — PipeShield
+# Manual Técnico — PipelineShield
 
-**Nombre del proyecto:** PipeShield
+**Nombre del proyecto:** PipelineShield
 **Versión de la acción:** v1.1.28
 **Tipo:** GitHub Action (composite)
 **Repositorio:** `fabios21/security-pipeline-colombia`
@@ -10,7 +10,7 @@
 
 ## 1. Introducción
 
-PipeShield es una GitHub Action que automatiza el análisis de seguridad en repositorios de código. Su objetivo es **detectar secretos expuestos y vulnerabilidades de código** antes de que un cambio se integre a las ramas principales, bloqueando de forma automática los Pull Requests que incumplan las políticas de seguridad.
+PipelineShield es una GitHub Action que automatiza el análisis de seguridad en repositorios de código. Su objetivo es **detectar secretos expuestos y vulnerabilidades de código** antes de que un cambio se integre a las ramas principales, bloqueando de forma automática los Pull Requests que incumplan las políticas de seguridad.
 
 Está orientada al contexto colombiano: los reportes se generan en español (`es_CO`), usan la zona horaria `America/Bogota` e incluyen referencias a la normatividad nacional aplicable (Ley 1273 de 2009, Ley 1581 de 2012 y Decreto 1377 de 2013).
 

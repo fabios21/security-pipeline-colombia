@@ -1,9 +1,9 @@
-# 🛡️ PipeShield
+# 🛡️ PipelineShield
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Compatible-blue)](https://github.com/features/actions)
 
-**PipeShield** es un pipeline de seguridad automatizado para GitHub Actions, orientado a detectar secretos expuestos, vulnerabilidades SAST y generar reportes en español con contexto colombiano.
+**PipelineShield** es un pipeline de seguridad automatizado para GitHub Actions, orientado a detectar secretos expuestos, vulnerabilidades SAST y generar reportes en español con contexto colombiano.
 
 ## Características
 
@@ -20,7 +20,7 @@
 Agrega este paso a tu workflow (por ejemplo en `.github/workflows/security.yml`):
 
 ```yaml
-name: PipeShield
+name: PipelineShield
 
 on:
   pull_request:
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: PipeShield
+      - name: PipelineShield
         uses: fabios21/security-pipeline-colombia@v1.1.28
         with:
           scan-mode: pr-only
