@@ -961,21 +961,11 @@ runs:
         echo "report_url=$HTML_REPORT" >> $GITHUB_OUTPUT
         echo "report_urls=$REPORT_URLS" >> $GITHUB_OUTPUT
         
-    # Paso 10: Subir artifacts
-    - name: Upload security reports
+    # Paso 10a: Mostrar el reporte visual en el log
+    - name: Show visual report
       if: always()
       shell: bash
       run: |
-        echo "📤 Preparando artifacts de seguridad..."
-        REPORT_LANG="${REPORT_LANG:-es_CO}"
-        
-        # Listar archivos que se van a incluir en artifacts
-        echo "📄 Archivos generados:"
-        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
-        
-        # NO crear directorio security-artifacts, dejar archivos en raíz
-        # El workflow principal debe subir estos archivos directamente
-        
         echo "::group::📊 Contenido del reporte visual:"
         if [ -f "visual-report.txt" ]; then
           cat visual-report.txt
@@ -983,17 +973,25 @@ runs:
           echo "⚠️ No se encontró visual-report.txt"
         fi
         echo "::endgroup::"
-        
-        # Crear un resumen de archivos disponibles para el workflow principal
-        echo "FILES_FOR_UPLOAD=$(ls gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-$REPORT_LANG.* 2>/dev/null | tr '\n' ' ' || echo '')" >> $GITHUB_ENV
-        
-        echo "✅ Archivos preparados para ser subidos por el workflow principal"
-        echo "   El workflow principal debe usar upload-artifact con estos archivos:"
-        echo "   - gitleaks-report.json"
-        echo "   - semgrep-results.sarif" 
-        echo "   - validation-result.json"
-        echo "   - visual-report.txt"
-        echo "   - security-report-$REPORT_LANG.*"
+
+        echo "📄 Archivos generados para el artifact:"
+        ls -la gitleaks-report.json semgrep-results.sarif validation-result.json visual-report.txt security-report-*.* 2>/dev/null || echo "⚠️ Algunos archivos no se encontraron"
+
+    # Paso 10b: Subir artifacts DENTRO de la acción (disponible para cualquier repo consumidor)
+    - name: Upload security reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          gitleaks-report.json
+          semgrep-results.sarif
+          validation-result.json
+          visual-report.txt
+          security-report-*.html
+          security-report-*.md
+        retention-days: 30
+        if-no-files-found: ignore
         
     # Paso 11: Verificación final de bloqueo
     - name: Final security validation
