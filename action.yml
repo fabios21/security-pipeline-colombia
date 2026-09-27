@@ -986,13 +986,8 @@ runs:
       with:
         name: security-reports
         path: |
-          gitleaks-report.json
-          semgrep-results.sarif
-          validation-result.json
-          visual-report.txt
-          pr-comment.md
           security-report-*.html
-          security-report-*.md
+          gitleaks-report.json
         retention-days: 30
         if-no-files-found: warn
         
