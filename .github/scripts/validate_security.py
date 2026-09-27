@@ -327,7 +327,7 @@ proporcionando análisis de credenciales expuestas y reportes comprensibles.
     summary = result["summary"]
     
     # 📊 SECCIÓN 1: RESUMEN VISUAL CON EMOJIS
-    print(f"\n📊 RESUMEN DE HALLazGOS")
+    print(f"\n📊 RESUMEN DE HALLAZGOS")
     print("═" * 40)
     
     # Mostrar secreto como tarjetas visuales
@@ -386,7 +386,7 @@ proporcionando análisis de credenciales expuestas y reportes comprensibles.
         print("   └─ ✅ Nivel de seguridad apropiado")
     
     if compliance["requires_notification"]:
-        print(f"\n📋 HALLazGOS CRÍTICOS:")
+        print(f"\n📋 HALLAZGOS CRÍTICOS:")
         print("   └─ ⚠️  Se detectaron problemas de seguridad")
         print("   └─ 🔧 Se requiere corrección inmediata")
     
