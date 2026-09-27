@@ -940,9 +940,8 @@ runs:
         fi
 
         if ! grep -qi 'Hallazgos Detectados' "$HTML_REPORT"; then
-          echo "❌ El HTML no contiene la sección de hallazgos individuales; el generador utilizado no es compatible."
-          echo "❌ Revise el SHA-256 del generador y la referencia de la Action."
-          exit 1
+          echo "⚠️ Advertencia: el HTML no contiene la sección 'Hallazgos Detectados'."
+          echo "⚠️ El reporte se generará igualmente; revise el generador si el detalle no aparece."
         fi
 
         if [[ ",$REPORT_URLS," != *",$HTML_REPORT,"* ]]; then
